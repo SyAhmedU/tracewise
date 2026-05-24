@@ -64,7 +64,7 @@ export default function Landing({
       <div style={{ marginBottom: 36 }}>
         <h3 style={{ fontSize: '1.05rem', marginBottom: 4 }}>Start from a worked example</h3>
         <p style={{ fontSize: '.86rem', color: 'var(--text-soft)', marginBottom: 14, lineHeight: 1.5 }}>
-          {WORKED_EXAMPLES.length} real operating-world workflows — services, manufacturing, agri-trade, government and healthcare, mostly grounded in Tamil Nadu. Open one to see the method in action, then edit it or build your own.
+          {WORKED_EXAMPLES.length} real operating-world workflows — services, manufacturing, agri-trade, government and healthcare, mostly grounded in Tamil Nadu. Each card reads off the same capture: the ground-level dynamic the trace surfaces (its shadow steps, judgment calls and friction) and where AI actually fits because of it. Open one to see the method in action, then edit it or build your own.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
           {WORKED_EXAMPLES.map((ex) => (
@@ -94,6 +94,23 @@ export default function Landing({
               </div>
               <div style={{ fontWeight: 700, color: 'var(--text-h)', marginBottom: 5 }}>{ex.label}</div>
               <div style={{ fontSize: '.84rem', color: 'var(--text-soft)', lineHeight: 1.5 }}>{ex.summary}</div>
+
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                <div style={{
+                  fontSize: '.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em',
+                  color: 'var(--text-soft)', marginBottom: 3,
+                }}>Ground-level dynamic</div>
+                <div style={{ fontSize: '.79rem', color: 'var(--text-soft)', lineHeight: 1.5, marginBottom: 10 }}>
+                  {ex.behavioralContext}
+                </div>
+                <div style={{
+                  fontSize: '.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em',
+                  color: 'var(--accent)', marginBottom: 3,
+                }}>Where AI fits</div>
+                <div style={{ fontSize: '.79rem', color: 'var(--text-soft)', lineHeight: 1.5 }}>
+                  {ex.fieldSpecificFit}
+                </div>
+              </div>
             </button>
           ))}
         </div>
