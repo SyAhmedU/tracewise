@@ -132,7 +132,8 @@ const mobileShop = () => mk({
     S(7, { action: 'Set up — SIM transfer, Google login, WhatsApp transfer from old to new, install basics', tool: 'Cables + SIM tools + transfer app', timeMins: 25, frequency: 'many-times-a-day', frictionTags: ['wait'], needsJudgment: true, isPainful: true, notes: 'WhatsApp transfer is the longest step — and the most cherished by the customer.' }),
     S(8, { action: 'Apply screen guard + back cover (free with most sales)', tool: 'Screen guard + cover', timeMins: 8, frequency: 'many-times-a-day' }),
     S(9, { action: 'Bill on POS / billing app, GST invoice, EMI papers signed', tool: 'Vyapar + EMI papers', outputDestination: 'A client / customer', timeMins: 6, frequency: 'many-times-a-day' }),
-    S(10, { action: 'Log old exchange phone for resale, decide repair vs flip vs scrap', tool: 'Old-stock notebook', inputSource: 'My own notes', frequency: 'few-times-a-week', isShadow: true, needsJudgment: true }),
+    S(10, { action: 'Log the old exchange phone into the old-stock notebook for resale tracking', tool: 'Old-stock notebook', inputSource: 'My own notes', outputWhat: 'a tracked resale unit', frequency: 'few-times-a-week', isShadow: true, frictionTags: ['manual-transfer'], notes: 'Personal notebook — no system tracks traded-in stock; a real ledger would.' }),
+    S(11, { action: 'Decide repair vs flip vs scrap for the traded-in unit', tool: 'My eyes + resale-value judgment', inputSource: 'My own notes', frequency: 'few-times-a-week', needsJudgment: true, notes: 'Valuation call built from selling — what it fetches refurbished vs the repair cost.' }),
   ],
   handoffs: [
     { direction: 'wait-on', who: 'EMI bank server', what: 'EMI approval OTP', typicalDelay: 'minutes' },
@@ -196,7 +197,7 @@ export const RETAIL: WorkedExample[] = [
   { key: 'mobile-shop', label: 'Selling a smartphone with exchange + EMI', domain: 'Retail', region: 'Chennai, TN', emoji: '📱',
     summary: 'A high-street mobile shop owner doing exchange valuation, Bajaj EMI OTP dance, and the longest step of all — the WhatsApp transfer from old phone to new.',
     behavioralContext: 'The trace tags the "which phone actually beats which" demo and the exchange quote as judgment built from selling, not spec sheets — that honesty is why customers return. The WhatsApp transfer, though the longest step, is marked as the one the customer cherishes most, so it is not waste to be cut.',
-    fieldSpecificFit: 'Do not automate the advice or the cherished transfer ritual. Target the steps the capture flags as friction: the Bajaj/HDFC EMI OTP retries (a faster pre-checked flow) and the old-stock flip/repair/scrap decision (a simple traded-in ledger). The judgment stays the owner\'s.',
+    fieldSpecificFit: 'Do not automate the advice or the cherished transfer ritual. Target the steps the capture flags as friction: the Bajaj/HDFC EMI OTP retries (a faster pre-checked flow) and the old-stock tracking (a simple flip/repair/scrap ledger for traded-in units). The valuation call itself stays the owner\'s judgment.',
     build: mobileShop },
   { key: 'supermarket-cashier', label: 'Modern-trade cashier at Sunday peak', domain: 'Retail', region: 'India urban', emoji: '🛒',
     summary: 'A cashier scanning, weighing, applying loyalty and bagging — short drawer at EOD = stay back till it adds up.',
