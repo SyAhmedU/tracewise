@@ -83,7 +83,9 @@ export default async function handler(req, res) {
 
   const ctx = (await readBody(req)) || {};
   const step = ctx.step || {};
-  const key = process.env.GROQ_API_KEY;
+  // Strip any stray non-printable chars (e.g. a BOM/whitespace picked up when the
+  // env var was set) so the Authorization header is always valid ASCII.
+  const key = (process.env.GROQ_API_KEY || '').replace(/[^\x21-\x7E]/g, '');
 
   // No key configured → deterministic probes.
   if (!key) {
