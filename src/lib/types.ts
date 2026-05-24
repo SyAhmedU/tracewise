@@ -3,29 +3,35 @@
 
 export const SCHEMA_VERSION = 1;
 
-/** The seams where waste, duplication and wait-time hide. These drive v2's analysis. */
+// Friction = the non-value-adding waste in a step, grounded in the Lean / Toyota
+// Production System taxonomy of waste (muda) — Ohno (1988); Womack & Jones (1996).
+// Human judgment is deliberately NOT a friction tag: it is value to preserve, a
+// function-allocation question (Parasuraman, Sheridan & Wickens, 2000), captured
+// as the per-step `needsJudgment` attribute instead.
 export type FrictionTag =
-  | 'wait'            // time spent waiting on a person, system, or approval
-  | 'rework'         // redoing something that was already done
-  | 'manual-transfer' // copying / re-typing data between places by hand
-  | 'approval'       // a gate where someone must sign off
-  | 'lookup'         // hunting for information across places
-  | 'judgment';      // a decision that needs human knowledge / context
+  | 'wait'            // idle delay waiting on a person/system/approval — waiting waste
+  | 'rework'         // redoing work already done — defect waste
+  | 'manual-transfer' // re-keying / copying data between places — over-processing
+  | 'movement'       // moving materials, documents or oneself between places — transport waste
+  | 'lookup'         // searching for information, tools or materials — motion waste
+  | 'approval'       // a sign-off gate that stalls the work — handback / waiting
+  | 'chasing';       // actively following up / expediting to keep it moving — non-value-add
 
 export interface FrictionMeta {
   id: FrictionTag;
   label: string;
-  hint: string;
-  color: string; // CSS var name
+  hint: string;       // names the underlying Lean waste type
+  color: string;      // CSS var name
 }
 
 export const FRICTION_TAGS: FrictionMeta[] = [
-  { id: 'wait',            label: 'Waiting',          hint: 'You sit idle until a person or system responds', color: 'var(--f-wait)' },
-  { id: 'rework',          label: 'Rework',           hint: 'You redo work that was already done once',       color: 'var(--f-rework)' },
-  { id: 'manual-transfer', label: 'Manual transfer',  hint: 'You copy or re-type data between two places',     color: 'var(--f-transfer)' },
-  { id: 'approval',        label: 'Approval gate',    hint: 'Someone has to sign off before you continue',     color: 'var(--f-approval)' },
-  { id: 'lookup',          label: 'Hunting / lookup', hint: 'You search across places to find what you need',  color: 'var(--f-lookup)' },
-  { id: 'judgment',        label: 'Judgment call',    hint: 'A human decision using context or experience',    color: 'var(--f-judgment)' },
+  { id: 'wait',            label: 'Waiting',          hint: 'Idle delay until a person or system responds — waiting waste (muda)',        color: 'var(--f-wait)' },
+  { id: 'rework',          label: 'Rework',           hint: 'Redoing work already done once — defect waste (muda)',                       color: 'var(--f-rework)' },
+  { id: 'manual-transfer', label: 'Manual transfer',  hint: 'Re-keying or copying data between two places — over-processing waste',        color: 'var(--f-transfer)' },
+  { id: 'movement',        label: 'Movement',         hint: 'Moving materials, documents or yourself between places — transport waste',     color: 'var(--f-movement)' },
+  { id: 'lookup',          label: 'Searching',        hint: 'Hunting for information, tools or materials — motion waste',                    color: 'var(--f-lookup)' },
+  { id: 'approval',        label: 'Approval gate',    hint: 'A sign-off that stalls the work — handback / waiting waste',                    color: 'var(--f-approval)' },
+  { id: 'chasing',         label: 'Chasing',          hint: 'Following up or expediting to keep things moving — non-value-add work',         color: 'var(--f-chasing)' },
 ];
 
 export type Frequency = 'many-times-a-day' | 'daily' | 'few-times-a-week' | 'weekly' | 'monthly' | 'rarely';
@@ -52,7 +58,8 @@ export interface Step {
   timeMins: number | null;        // rough minutes per occurrence
   frequency: Frequency | null;
   frictionTags: FrictionTag[];
-  isShadow: boolean;              // unofficial but essential (shadow tool/step)
+  isShadow: boolean;              // articulation work — unofficial but essential (Star & Strauss, 1999)
+  needsJudgment: boolean;         // human-essential decision — preserve, don't automate (Parasuraman et al., 2000)
   isPainful: boolean;             // the step they dread — fast subjective signal
   notes: string;
 }
@@ -80,7 +87,8 @@ export interface Workflow {
   role: string;            // the person's role (no real name needed)
   context: string;         // org / team / industry, optional free text
   outputName: string;      // the ONE recurring output being documented
-  instanceAnchor: string;  // the specific recent instance being recalled
+  officialVersion: string; // work-as-imagined: the SOP/official process, if one exists (Hollnagel, 2014)
+  instanceAnchor: string;  // critical-incident anchor: the specific recent instance being recalled (Klein et al., 1989)
   trigger: string;         // what kicks it off
   steps: Step[];
   handoffs: Handoff[];
@@ -111,6 +119,7 @@ export function newStep(order: number): Step {
     frequency: null,
     frictionTags: [],
     isShadow: false,
+    needsJudgment: false,
     isPainful: false,
     notes: '',
   };
@@ -132,6 +141,7 @@ export function newWorkflow(): Workflow {
     role: '',
     context: '',
     outputName: '',
+    officialVersion: '',
     instanceAnchor: '',
     trigger: '',
     steps: [],
@@ -150,19 +160,23 @@ export interface FrictionSummary {
   toolCount: number;           // distinct tools touched
   toolSwitches: number;        // times the tool changes between consecutive steps
   handoffCount: number;
-  shadowCount: number;
+  shadowCount: number;         // articulation-work steps
+  judgmentCount: number;       // human-essential decisions (preserve)
   painCount: number;           // steps marked "dreaded"
+  wasteSteps: number;          // steps carrying at least one friction (muda) tag
   tagCounts: Record<FrictionTag, number>;
 }
 
 export function summarize(wf: Workflow): FrictionSummary {
   const tagCounts = {
-    wait: 0, rework: 0, 'manual-transfer': 0, approval: 0, lookup: 0, judgment: 0,
+    wait: 0, rework: 0, 'manual-transfer': 0, movement: 0, lookup: 0, approval: 0, chasing: 0,
   } as Record<FrictionTag, number>;
 
   let totalMinutes = 0;
   let shadowCount = 0;
+  let judgmentCount = 0;
   let painCount = 0;
+  let wasteSteps = 0;
   const tools = new Set<string>();
   let toolSwitches = 0;
   let prevTool: string | null = null;
@@ -170,7 +184,9 @@ export function summarize(wf: Workflow): FrictionSummary {
   for (const s of wf.steps) {
     if (typeof s.timeMins === 'number') totalMinutes += s.timeMins;
     if (s.isShadow) shadowCount += 1;
+    if (s.needsJudgment) judgmentCount += 1;
     if (s.isPainful) painCount += 1;
+    if (s.frictionTags.length > 0) wasteSteps += 1;
     for (const t of s.frictionTags) tagCounts[t] += 1;
     const tool = s.tool.trim().toLowerCase();
     if (tool) {
@@ -187,7 +203,9 @@ export function summarize(wf: Workflow): FrictionSummary {
     toolSwitches,
     handoffCount: wf.handoffs.length,
     shadowCount,
+    judgmentCount,
     painCount,
+    wasteSteps,
     tagCounts,
   };
 }

@@ -27,6 +27,17 @@ export default function FrameStage({ wf, update }: { wf: Workflow; update: (fn: 
           onChange={(e) => update((d) => { d.context = e.target.value; })}
         />
       </Field>
+
+      <Field
+        label="Is there an official version? (optional)"
+        hint="The SOP, the process doc, “how it’s supposed to work”. We won’t follow it — we capture it only to see how far reality has drifted from it."
+      >
+        <TextArea
+          value={wf.officialVersion}
+          placeholder="e.g. “The manual says: log it, verify, approve within 5 days.” Or “there’s no written process.”"
+          onChange={(e) => update((d) => { d.officialVersion = e.target.value; })}
+        />
+      </Field>
     </Card>
   );
 }

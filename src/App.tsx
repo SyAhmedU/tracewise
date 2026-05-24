@@ -4,6 +4,7 @@ import {
   listWorkflows, saveWorkflow, deleteWorkflow, getWorkflow,
   loadAutosave, writeAutosave, clearAutosave,
 } from './lib/store';
+import { WORKED_EXAMPLES } from './lib/examples';
 import SyedBar from './components/SyedBar';
 import Landing from './components/Landing';
 import Wizard from './components/Wizard';
@@ -33,6 +34,10 @@ export default function App() {
   };
 
   const startNew = () => { setWf(newWorkflow()); setStage(0); setMode('wizard'); };
+  const loadExample = (key: string) => {
+    const ex = WORKED_EXAMPLES.find((e) => e.key === key);
+    if (ex) { setWf(ex.build()); setStage(0); setMode('wizard'); window.scrollTo(0, 0); }
+  };
   const open = (id: string) => { const w = getWorkflow(id); if (w) { setWf(w); setStage(0); setMode('wizard'); } };
   const doResume = () => { if (resume) { setWf(resume.wf); setStage(resume.stage); setMode('wizard'); } };
 
@@ -63,6 +68,7 @@ export default function App() {
             onDelete={remove}
             resumeAvailable={!!resume}
             onResume={doResume}
+            onLoadExample={loadExample}
           />
         )}
         {mode === 'wizard' && wf && (

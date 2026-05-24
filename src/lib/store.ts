@@ -3,16 +3,24 @@
 import { type Workflow, type Step, SCHEMA_VERSION } from './types';
 
 // Fill in fields added after a workflow was first saved, so older localStorage
-// records keep working (and controlled inputs never go uncontrolled).
+// records keep working (and controlled inputs never go uncontrolled). Also
+// migrates the retired 'judgment' friction tag into the needsJudgment attribute.
 function normalize(w: Workflow): Workflow {
   return {
     ...w,
+    officialVersion: w.officialVersion ?? '',
     instanceAnchor: w.instanceAnchor ?? '',
-    steps: (w.steps ?? []).map((s: Step) => ({
-      ...s,
-      isPainful: s.isPainful ?? false,
-      frictionTags: s.frictionTags ?? [],
-    })),
+    steps: (w.steps ?? []).map((s: Step) => {
+      const tags = (s.frictionTags ?? []) as string[];
+      const hadJudgment = tags.includes('judgment');
+      return {
+        ...s,
+        frictionTags: tags.filter((t) => t !== 'judgment') as Step['frictionTags'],
+        needsJudgment: s.needsJudgment ?? hadJudgment,
+        isShadow: s.isShadow ?? false,
+        isPainful: s.isPainful ?? false,
+      };
+    }),
     handoffs: w.handoffs ?? [],
     exceptions: w.exceptions ?? [],
   };

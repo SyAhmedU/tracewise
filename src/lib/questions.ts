@@ -7,6 +7,7 @@ export interface StageMeta {
   label: string;       // short nav label
   title: string;       // big question / heading
   blurb: string;       // one-line framing under the title
+  basis: string;       // short theoretical grounding, shown as a subtle note/tooltip
 }
 
 export const STAGES: StageMeta[] = [
@@ -15,36 +16,42 @@ export const STAGES: StageMeta[] = [
     label: 'Frame',
     title: 'What is the one thing you are most often on the hook for?',
     blurb: 'Pick a single recurring output and document that — not your whole job. One thing, start to finish.',
+    basis: 'Work-as-done vs work-as-imagined (Hollnagel, 2014): we document the real enactment, and note the official version only to see the gap.',
   },
   {
     id: 'trigger',
     label: 'Trigger',
     title: 'What kicks it off?',
     blurb: 'The real signal that starts the work — a request, a time of day, an email, an event.',
+    basis: 'The starting cue of the work episode — the entry point of the Critical Decision Method timeline (Klein et al., 1989).',
   },
   {
     id: 'steps',
-    label: 'Step trace',
+    label: 'Timeline',
     title: 'Walk me through the last time you actually did this.',
     blurb: 'Not the way it is supposed to be done — what you literally did, step by step, including the messy parts.',
+    basis: 'Critical Decision Method (Klein et al., 1989; Crandall et al., 2006): anchor on one real incident, reconstruct the timeline, then deepen with probes.',
   },
   {
     id: 'handoffs',
     label: 'Handoffs',
     title: 'Who do you wait on, and who waits on you?',
     blurb: 'The seams between people and systems are where time disappears.',
+    basis: 'The social half of the sociotechnical system (Trist & Bamforth, 1951); handoffs are where waiting waste concentrates.',
   },
   {
     id: 'exceptions',
     label: 'When it breaks',
     title: 'What goes wrong — and what do you actually do when it does?',
     blurb: 'The unhappy path. This is often where the real effort hides.',
+    basis: 'Performance variability and everyday adaptation — the resilience that work-as-done supplies but work-as-imagined ignores (Hollnagel, 2014).',
   },
   {
     id: 'review',
     label: 'Your map',
     title: 'Here is the work, as you actually do it.',
     blurb: 'Check it, fix it, and keep it. This is the honest "as-is" — the ground truth.',
+    basis: 'The as-is map and Lean waste profile (Ohno, 1988; Womack & Jones, 1996) — the evidence base for deciding where automation fits (Goodhue & Thompson, 1995).',
   },
 ];
 

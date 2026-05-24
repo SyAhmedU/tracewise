@@ -75,7 +75,7 @@ export default function StepsStage({ wf, update }: { wf: Workflow; update: (fn: 
           <div key={s.id} className="tw-rise" style={{
             background: 'var(--surface)',
             border: '1px solid var(--border)',
-            borderLeft: `3px solid ${s.isPainful ? 'var(--f-rework)' : s.isShadow ? 'var(--f-transfer)' : 'var(--accent-border)'}`,
+            borderLeft: `3px solid ${s.isPainful ? 'var(--f-rework)' : s.isShadow ? 'var(--f-transfer)' : s.needsJudgment ? 'var(--f-judgment)' : 'var(--accent-border)'}`,
             borderRadius: 12, boxShadow: 'var(--shadow)', padding: '12px 14px', marginBottom: 10, textAlign: 'left',
           }}>
             {/* skeleton row */}
@@ -120,8 +120,9 @@ export default function StepsStage({ wf, update }: { wf: Workflow; update: (fn: 
             {!open && (s.tool || s.frictionTags.length > 0 || s.isShadow) && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8, paddingLeft: 36, fontSize: '.74rem', color: 'var(--text-soft)' }}>
                 {s.tool && <span>via {s.tool}</span>}
-                {s.frictionTags.length > 0 && <span>· {s.frictionTags.length} friction flag{s.frictionTags.length > 1 ? 's' : ''}</span>}
+                {s.frictionTags.length > 0 && <span>· {s.frictionTags.length} waste flag{s.frictionTags.length > 1 ? 's' : ''}</span>}
                 {s.isShadow && <span style={{ color: 'var(--f-transfer)' }}>· shadow</span>}
+                {s.needsJudgment && <span style={{ color: 'var(--f-judgment)' }}>· judgment</span>}
               </div>
             )}
 

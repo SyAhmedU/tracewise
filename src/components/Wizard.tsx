@@ -57,6 +57,12 @@ export default function Wizard({
         </div>
         <h2 style={{ fontSize: '1.55rem', lineHeight: 1.2, letterSpacing: '-.01em', marginBottom: 8 }}>{meta.title}</h2>
         <p style={{ color: 'var(--text-soft)', fontSize: '.95rem', lineHeight: 1.55 }}>{meta.blurb}</p>
+        <details style={{ marginTop: 10 }}>
+          <summary style={{ cursor: 'pointer', fontSize: '.74rem', color: 'var(--accent)', fontWeight: 600, listStyle: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            📖 the method behind this step
+          </summary>
+          <p style={{ fontSize: '.78rem', color: 'var(--text-soft)', lineHeight: 1.5, marginTop: 7, paddingLeft: 4, borderLeft: '2px solid var(--border-strong)', paddingInlineStart: 10 }}>{meta.basis}</p>
+        </details>
       </div>
 
       <div key={meta.id} className="tw-fade">

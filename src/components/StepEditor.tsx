@@ -133,14 +133,24 @@ export default function StepEditor({
         </div>
       </div>
 
-      <label style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer', marginBottom: 14, fontSize: '.85rem', color: 'var(--text)' }}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer', marginBottom: 10, fontSize: '.85rem', color: 'var(--text)' }}>
         <input
           type="checkbox"
           checked={step.isShadow}
           onChange={(e) => onChange((s) => { s.isShadow = e.target.checked; })}
           style={{ width: 17, height: 17, accentColor: 'var(--f-transfer)' }}
         />
-        This is a <strong style={{ color: 'var(--f-transfer)' }}>shadow step</strong> — unofficial, but I couldn't do my job without it.
+        <span><strong style={{ color: 'var(--f-transfer)' }}>Shadow step</strong> — unofficial, but I couldn't do my job without it <span title="Articulation work — the invisible work that makes formal processes function (Star & Strauss, 1999)" style={{ cursor: 'help', opacity: .6 }}>ⓘ</span></span>
+      </label>
+
+      <label style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer', marginBottom: 14, fontSize: '.85rem', color: 'var(--text)' }}>
+        <input
+          type="checkbox"
+          checked={step.needsJudgment}
+          onChange={(e) => onChange((s) => { s.needsJudgment = e.target.checked; })}
+          style={{ width: 17, height: 17, accentColor: 'var(--f-judgment)' }}
+        />
+        <span><strong style={{ color: 'var(--f-judgment)' }}>Needs human judgment</strong> — a real decision using context or experience <span title="Function allocation: judgment-heavy work is value to preserve, not waste to automate (Parasuraman, Sheridan & Wickens, 2000)" style={{ cursor: 'help', opacity: .6 }}>ⓘ</span></span>
       </label>
 
       <Field label={STEP_FIELD_PROMPTS.notes}>

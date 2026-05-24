@@ -15,12 +15,14 @@
   --shadow: 0 10px 30px -14px rgba(20, 12, 40, .12), 0 2px 6px rgba(20, 12, 40, .04);
   --shadow-lg: 0 24px 60px -20px rgba(20, 12, 40, .22), 0 4px 14px rgba(20, 12, 40, .06);
 
-  /* friction tag colours */
+  /* friction tag colours (Lean muda) + judgment marker */
   --f-wait: #E8923A;
   --f-rework: #E0524F;
   --f-transfer: #C24FD6;
-  --f-approval: #4F8BE0;
+  --f-movement: #4FB0C2;
   --f-lookup: #3FA98C;
+  --f-approval: #4F8BE0;
+  --f-chasing: #D9663B;
   --f-judgment: #8A7BE6;
 
   --warm-grad: linear-gradient(135deg, #FF9656 0%, #F14575 55%, #9270F4 100%);

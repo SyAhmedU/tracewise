@@ -12,6 +12,7 @@ export function toMarkdown(wf: Workflow): string {
   if (wf.context.trim()) L.push(`**Context:** ${wf.context}  `);
   if (wf.instanceAnchor.trim()) L.push(`**Recalled instance:** ${wf.instanceAnchor}  `);
   L.push(`**Trigger:** ${wf.trigger || '—'}  `);
+  if (wf.officialVersion.trim()) L.push(`**Work-as-imagined (official version):** ${wf.officialVersion}  `);
   L.push(`**Documented:** ${new Date(wf.updatedAt).toLocaleString()}`);
   L.push('');
   L.push(`> This is the *practical, as-is* process — what actually happens, not the SOP.`);
@@ -19,13 +20,17 @@ export function toMarkdown(wf: Workflow): string {
   L.push('## Steps');
   L.push('');
   wf.steps.forEach((st) => {
-    const marks = [st.isShadow ? 'shadow / unofficial' : '', st.isPainful ? 'dreaded' : ''].filter(Boolean).join(', ');
+    const marks = [
+      st.isShadow ? 'shadow / articulation work' : '',
+      st.needsJudgment ? 'human judgment' : '',
+      st.isPainful ? 'dreaded' : '',
+    ].filter(Boolean).join(', ');
     L.push(`### ${st.order}. ${st.action || '(unnamed step)'}${marks ? `  _(${marks})_` : ''}`);
     L.push(`- **Tool:** ${st.tool || '—'}`);
     L.push(`- **Needs:** ${st.inputWhat || '—'}${st.inputSource ? ` (from ${st.inputSource})` : ''}`);
     L.push(`- **Produces:** ${st.outputWhat || '—'}${st.outputDestination ? ` → ${st.outputDestination}` : ''}`);
     L.push(`- **Time:** ${st.timeMins != null ? `${st.timeMins} min` : '—'} · **Frequency:** ${freqLabel(st.frequency)}`);
-    if (st.frictionTags.length) L.push(`- **Friction:** ${st.frictionTags.map(tagLabel).join(', ')}`);
+    if (st.frictionTags.length) L.push(`- **Waste (muda):** ${st.frictionTags.map(tagLabel).join(', ')}`);
     if (st.notes.trim()) L.push(`- **Notes:** ${st.notes}`);
     L.push('');
   });
@@ -49,18 +54,20 @@ export function toMarkdown(wf: Workflow): string {
     L.push('');
   }
 
-  L.push('## Friction summary');
+  L.push('## Waste profile (Lean muda)');
   L.push('');
   L.push(`- Steps: ${s.totalSteps}`);
   L.push(`- Known hands-on time: ${s.totalMinutes} min`);
   L.push(`- Distinct tools: ${s.toolCount} (tool switches: ${s.toolSwitches})`);
   L.push(`- Handoffs / wait points: ${s.handoffCount}`);
-  L.push(`- Shadow steps: ${s.shadowCount}`);
+  L.push(`- Steps carrying waste: ${s.wasteSteps}`);
+  L.push(`- Shadow (articulation-work) steps: ${s.shadowCount}`);
+  L.push(`- Human-judgment steps (preserve): ${s.judgmentCount}`);
   L.push(`- Dreaded steps: ${s.painCount}`);
   const tags = (Object.entries(s.tagCounts) as [FrictionTag, number][]).filter(([, n]) => n > 0);
-  if (tags.length) L.push(`- Friction flags: ${tags.map(([t, n]) => `${tagLabel(t)} ×${n}`).join(', ')}`);
+  if (tags.length) L.push(`- Waste by type: ${tags.map(([t, n]) => `${tagLabel(t)} ×${n}`).join(', ')}`);
   L.push('');
-  L.push('_Captured with Tracewise — ground truth before automation._');
+  L.push('_Captured with Tracewise — work-as-done before automation. Method: cognitive task analysis (Klein et al., 1989); Lean waste (Ohno, 1988); work-as-imagined vs work-as-done (Hollnagel, 2014)._');
   return L.join('\n');
 }
 

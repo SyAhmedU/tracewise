@@ -46,7 +46,8 @@ export default function ReviewStage({ wf }: { wf: Workflow }) {
                 <div style={{ fontWeight: 600, color: 'var(--text-h)', marginBottom: 3 }}>
                   {st.isPainful && <span title="Step they dread" style={{ marginRight: 6 }}>😖</span>}
                   {st.action || '(unnamed step)'}
-                  {st.isShadow && <span style={{ marginLeft: 8, fontSize: '.7rem', color: 'var(--f-transfer)', fontWeight: 700 }}>SHADOW</span>}
+                  {st.isShadow && <span title="Articulation work (Star & Strauss, 1999)" style={{ marginLeft: 8, fontSize: '.7rem', color: 'var(--f-transfer)', fontWeight: 700 }}>SHADOW</span>}
+                  {st.needsJudgment && <span title="Human judgment — preserve (Parasuraman et al., 2000)" style={{ marginLeft: 8, fontSize: '.7rem', color: 'var(--f-judgment)', fontWeight: 700 }}>JUDGMENT</span>}
                 </div>
                 <div style={{ fontSize: '.82rem', color: 'var(--text-soft)' }}>
                   {st.tool && <span>via <strong style={{ color: 'var(--text)' }}>{st.tool}</strong></span>}
@@ -100,26 +101,53 @@ export default function ReviewStage({ wf }: { wf: Workflow }) {
         )}
       </div>
 
-      {/* ---- friction summary (counts only — v2 turns these into AI opportunities) ---- */}
+      {/* ---- work-as-imagined vs work-as-done gap ---- */}
+      {wf.officialVersion.trim() && (
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16,
+          boxShadow: 'var(--shadow)', padding: 24, marginBottom: 20, textAlign: 'left',
+        }}>
+          <h3 style={{ fontSize: '1.05rem', marginBottom: 4 }}>Work-as-imagined vs work-as-done</h3>
+          <p style={{ fontSize: '.82rem', color: 'var(--text-soft)', marginBottom: 14 }}>
+            The official process beside the real one. The distance between them is exactly where unmapped digitalisation and AI tend to fail (Hollnagel, 2014).
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div style={{ background: 'var(--bg)', border: '1px dashed var(--border-strong)', borderRadius: 12, padding: '12px 14px' }}>
+              <div style={{ fontSize: '.7rem', textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-soft)', fontWeight: 700, marginBottom: 6 }}>Work-as-imagined (SOP)</div>
+              <div style={{ fontSize: '.85rem', color: 'var(--text)', lineHeight: 1.5 }}>{wf.officialVersion}</div>
+            </div>
+            <div style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', borderRadius: 12, padding: '12px 14px' }}>
+              <div style={{ fontSize: '.7rem', textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--accent)', fontWeight: 700, marginBottom: 6 }}>Work-as-done (reality)</div>
+              <div style={{ fontSize: '.85rem', color: 'var(--text-h)', lineHeight: 1.5 }}>
+                {s.totalSteps} steps · {s.shadowCount} shadow · {s.wasteSteps} carrying waste · {s.handoffCount} handoffs
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---- friction summary (Lean waste profile; counts only — v2 turns these into AI opportunities) ---- */}
       <div style={{
         background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16,
         boxShadow: 'var(--shadow)', padding: 24, marginBottom: 20, textAlign: 'left',
       }}>
-        <h3 style={{ fontSize: '1.05rem', marginBottom: 4 }}>Friction summary</h3>
+        <h3 style={{ fontSize: '1.05rem', marginBottom: 4 }}>Waste profile</h3>
         <p style={{ fontSize: '.82rem', color: 'var(--text-soft)', marginBottom: 18 }}>
-          A snapshot of where effort and waiting live. Tracewise does not recommend tools yet — it shows you the ground truth first.
+          Where effort and delay concentrate, classified by Lean waste type (muda; Ohno, 1988). Judgment steps are shown separately — those are value to preserve, not waste to remove. No tool recommendations yet: ground truth first.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: activeTags.length ? 20 : 0 }}>
           <Stat n={s.totalSteps} label="steps" />
           <Stat n={s.totalMinutes} label="min hands-on" />
           <Stat n={s.toolCount} label="tools" sub={`${s.toolSwitches} switches`} />
           <Stat n={s.handoffCount} label="handoffs" />
+          <Stat n={s.wasteSteps} label="steps w/ waste" accent={s.wasteSteps > 0} />
           <Stat n={s.shadowCount} label="shadow steps" accent={s.shadowCount > 0} />
+          <Stat n={s.judgmentCount} label="judgment steps" />
           <Stat n={s.painCount} label="dreaded steps" accent={s.painCount > 0} />
         </div>
         {activeTags.length > 0 && (
           <div>
-            <div style={{ fontSize: '.78rem', color: 'var(--text-soft)', marginBottom: 10 }}>Friction flags raised:</div>
+            <div style={{ fontSize: '.78rem', color: 'var(--text-soft)', marginBottom: 10 }}>Waste flags raised, by type (muda):</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {activeTags.sort((a, b) => b[1] - a[1]).map(([t, n]) => {
                 const m = tagMeta(t);
