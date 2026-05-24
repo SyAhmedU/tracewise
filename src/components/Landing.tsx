@@ -64,7 +64,7 @@ export default function Landing({
       <div style={{ marginBottom: 36 }}>
         <h3 style={{ fontSize: '1.05rem', marginBottom: 4 }}>Start from a worked example</h3>
         <p style={{ fontSize: '.86rem', color: 'var(--text-soft)', marginBottom: 14, lineHeight: 1.5 }}>
-          {WORKED_EXAMPLES.length} real operating-world workflows — services, manufacturing, agri-trade, government and healthcare, mostly grounded in Tamil Nadu. Each card reads off the same capture: the ground-level dynamic the trace surfaces (its shadow steps, judgment calls and friction) and where AI actually fits because of it. Open one to see the method in action, then edit it or build your own.
+          {WORKED_EXAMPLES.length} real operating-world workflows — food, retail, hospitality, professional services, healthcare, government, manufacturing, agriculture and logistics, mostly grounded in Tamil Nadu. Each card reads off the same capture: the ground-level dynamic the trace surfaces (its shadow steps, judgment calls and friction) and where AI actually fits because of it. Open one to see the method in action, then edit it or build your own.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
           {WORKED_EXAMPLES.map((ex) => (

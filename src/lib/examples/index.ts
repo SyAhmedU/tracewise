@@ -3,9 +3,13 @@
 // the single WORKED_EXAMPLES list the app consumes.
 import { FOOD } from './food';
 import { RETAIL } from './retail';
-import { GOVERNMENT } from './government';
-import { HEALTHCARE } from './healthcare';
 import { HOSPITALITY } from './hospitality';
+import { HEALTHCARE } from './healthcare';
+import { GOVERNMENT } from './government';
+import { MANUFACTURING } from './manufacturing';
+import { AGRI } from './agri';
+import { LOGISTICS } from './logistics';
+import { SERVICES } from './services';
 import type { WorkedExample } from './_shared';
 
 export type { WorkedExample } from './_shared';
@@ -14,6 +18,10 @@ export const WORKED_EXAMPLES: WorkedExample[] = [
   ...FOOD,
   ...RETAIL,
   ...HOSPITALITY,
+  ...SERVICES,
   ...HEALTHCARE,
   ...GOVERNMENT,
+  ...MANUFACTURING,
+  ...AGRI,
+  ...LOGISTICS,
 ];
