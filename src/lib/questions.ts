@@ -53,6 +53,13 @@ export const STAGES: StageMeta[] = [
     blurb: 'Check it, fix it, and keep it. This is the honest "as-is" — the ground truth.',
     basis: 'The as-is map and Lean waste profile (Ohno, 1988; Womack & Jones, 1996) — the evidence base for deciding where automation fits (Goodhue & Thompson, 1995).',
   },
+  {
+    id: 'opportunities',
+    label: 'Where AI fits',
+    title: 'Now — where would AI actually earn its place?',
+    blurb: 'Scored from your map: which steps fit automation, which need a redesign, and which should stay human.',
+    basis: 'Task-Technology Fit (Goodhue & Thompson, 1995) decides where technology belongs; Levels of Automation (Parasuraman, Sheridan & Wickens, 2000) decides at what stage and how much. Judgment is preserved, shadow tools are read as unmet needs (Star & Strauss, 1999).',
+  },
 ];
 
 export const STAGE_INDEX = Object.fromEntries(STAGES.map((s, i) => [s.id, i]));

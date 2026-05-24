@@ -2,6 +2,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/probe.js": { "maxDuration": 30 }
+    "api/probe.js": { "maxDuration": 30 },
+    "api/recommend.js": { "maxDuration": 30 }
   }
 }

@@ -7,6 +7,7 @@ import StepsStage from './stages/StepsStage';
 import HandoffsStage from './stages/HandoffsStage';
 import ExceptionsStage from './stages/ExceptionsStage';
 import ReviewStage from './stages/ReviewStage';
+import OpportunitiesStage from './stages/OpportunitiesStage';
 
 export default function Wizard({
   wf, update, stage, setStage, onSaveExit,
@@ -72,6 +73,7 @@ export default function Wizard({
         {meta.id === 'handoffs' && <HandoffsStage wf={wf} update={update} />}
         {meta.id === 'exceptions' && <ExceptionsStage wf={wf} update={update} />}
         {meta.id === 'review' && <ReviewStage wf={wf} />}
+        {meta.id === 'opportunities' && <OpportunitiesStage wf={wf} />}
       </div>
 
       {/* footer nav */}

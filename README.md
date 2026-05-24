@@ -10,9 +10,10 @@ subscriptions, wrong tool for the job). The fix is sequencing — **first captur
 the real current workflow faithfully, then aim AI/automation only where it
 genuinely earns its place.**
 
-This is v1: the **capture engine**. It produces a faithful as-is map and a
-friction summary. The AI-opportunity scoring layer is deferred to v2 — but the
-data model already records everything that layer will need.
+Tracewise now has both halves: the **capture engine** (faithful as-is map +
+Lean waste profile) and the **Automation-Fit engine** (per-step scoring of where
+AI / automation actually belongs, what level of automation fits, and which steps
+to leave alone). Judgment is preserved, shadow tools are read as unmet needs.
 
 ## Methodology
 
@@ -41,6 +42,7 @@ A hybrid of a **structured backbone** (directional question-with-options) and
 4. **Handoffs** — who you wait on / hand to (the social system; where waiting waste concentrates).
 5. **When it breaks** — performance variability and the everyday adaptation work-as-imagined ignores.
 6. **Your map** — the as-is map, the work-as-imagined/done contrast, the Lean **waste profile**, and exports.
+7. **Where AI fits** — the v2 Automation-Fit engine. Each step gets a transparent score (impact × feasibility), an automation **archetype** (data integration, retrieval, orchestration, validation, routing, decision-support, physical-redesign, limited) and a **Level of Automation** (support → partial → high). Quadrants: quick win / easy / big bet / leave / **protect**. On-demand AI suggestions write a concrete, role-specific "try this week" paragraph per opportunity.
 
 Friction = **waste** (candidate to remove/automate). Human judgment is kept
 *separate* from waste — it is value to preserve. That distinction is the whole
@@ -53,6 +55,9 @@ point: it is what stops "automate everything" from destroying the work.
   the same provider scalebase/journaltime use) for follow-up probes. **Falls
   back to deterministic heuristic probes when no `GROQ_API_KEY` is set**, so the
   app is fully functional offline.
+- `api/recommend.js` — same pattern, layered on top of the deterministic
+  scoring in `src/lib/automation.ts` to generate concrete, role-specific
+  automation suggestions per step. Same offline-graceful fallback.
 - Persistence: `localStorage` — saved workflows under `tw_workflows`, autosave
   under `tw_autosave` (14-day TTL). No backend required for capture.
 
@@ -88,13 +93,41 @@ See `src/lib/types.ts`. A `Workflow` has `role`, `outputName`, `officialVersion`
 that v2's AI-opportunity layer will score. Older records are migrated on load
 (the retired `judgment` tag becomes the `needsJudgment` attribute).
 
+## The Automation-Fit engine (v2)
+
+`src/lib/automation.ts` is the explainable scoring substrate. It is pure,
+deterministic, and grounded in two specific theories rather than a black box:
+
+- **Task-Technology Fit (Goodhue & Thompson, 1995)** — only recommend technology
+  where it fits the task. The per-step `feasibility` = automatability of the
+  dominant Lean waste × structuredness of the tool.
+- **Levels of Automation (Parasuraman, Sheridan & Wickens, 2000)** — not a
+  binary automate-yes/no, but *which* of the four function stages (information
+  acquisition → analysis → decision → action) and at what level (support →
+  partial → high). Steps marked `needsJudgment` are capped at "decision
+  support" — function allocation in action.
+
+Each step receives:
+
+- **Impact** (0–1): weekly burden = frequency × per-occurrence minutes, nudged
+  by dread.
+- **Feasibility** (0–1): per-waste automatability × tool structuredness, capped
+  for judgment.
+- **Archetype**: `data-integration | retrieval | orchestration | validation |
+  routing | decision-support | physical-redesign | limited`.
+- **Quadrant**: `quick-win | easy | big-bet | leave | protect`.
+- **Rationale**: a transparent, deterministic explanation.
+
+The AI layer (`api/recommend.js`) takes that scored object and writes the
+*concrete* "try this week" paragraph — grounded in the role, the tool, and the
+output. Offline fallback is a template built from the same opportunity object,
+so the feature works fully without a key.
+
 ## Roadmap
 
-- **v2** — AI-opportunity overlay: score each step for automation suitability
-  using the captured waste profile and Task-Technology Fit / Levels-of-Automation,
-  protecting judgment steps, and pitch concrete improvements.
 - Team capture (multiple contributors → one merged map).
 - Voice and image capture modes.
+- Track adoption over time — did the suggested change actually stick?
 
 ## References
 
