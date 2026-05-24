@@ -1,4 +1,4 @@
-// Adaptive follow-up probes for a step. Calls /api/probe (Anthropic-backed);
+// Adaptive follow-up probes for a step. Calls /api/probe (Groq-backed);
 // if the endpoint is unavailable (e.g. `vite dev` without `vercel dev`, or no
 // API key), falls back to deterministic heuristic probes so the interview is
 // always functional offline — same philosophy as researchflow's mock fallback.

@@ -34,9 +34,10 @@ friction, hunt the shadow tools.
 ## Stack
 
 - React 19 + Vite + TypeScript (mirrors `researchflow`).
-- `api/probe.js` — Vercel Node function calling Anthropic (Claude Haiku) for
-  follow-up probes. **Falls back to deterministic heuristic probes when no
-  `ANTHROPIC_API_KEY` is set**, so the app is fully functional offline.
+- `api/probe.js` — Vercel Node function calling Groq (`llama-3.3-70b-versatile`,
+  the same provider scalebase/journaltime use) for follow-up probes. **Falls
+  back to deterministic heuristic probes when no `GROQ_API_KEY` is set**, so the
+  app is fully functional offline.
 - Persistence: `localStorage` — saved workflows under `tw_workflows`, autosave
   under `tw_autosave` (14-day TTL). No backend required for capture.
 
@@ -49,7 +50,7 @@ npm run build    # tsc -b && vite build
 npm run lint
 ```
 
-Set `ANTHROPIC_API_KEY` (see `.env.example`) and run via `vercel dev` to get
+Set `GROQ_API_KEY` (see `.env.example`) and run via `vercel dev` to get
 AI-generated probes locally.
 
 ## Data model
