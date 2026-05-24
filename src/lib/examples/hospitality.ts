@@ -1,0 +1,242 @@
+// HOSPITALITY — café, restaurant, hotel, salon, wedding hall, theatre, real-estate site visit
+import { S, mk, type WorkedExample } from './_shared';
+
+const cafeBarista = () => mk({
+  role: 'Café barista (morning shift)',
+  context: 'A small specialty café, single bar, two-person morning shift',
+  outputName: "a customer's drink served at the bar",
+  officialVersion: 'Greet, take order, ring on POS, pull shot to recipe, steam milk to temperature, assemble per spec, call the name, hand over.',
+  instanceAnchor: 'the 8:40 AM rush this Tuesday',
+  trigger: 'A customer reaches the front of the queue (or a mobile order pings)',
+  steps: [
+    S(1, { action: 'Greet the customer and take their order', tool: 'POS terminal', inputSource: 'A client / customer', outputWhat: 'a confirmed order', timeMins: 1, frequency: 'many-times-a-day', needsJudgment: true, notes: 'For regulars I know their usual — saves a minute.' }),
+    S(2, { action: 'Ring it through and take payment', tool: 'POS + card terminal', outputWhat: 'a paid ticket', timeMins: 1, frequency: 'many-times-a-day', frictionTags: ['wait'] }),
+    S(3, { action: 'Glance at the mobile-order tablet and slot it into the queue mentally', tool: 'Mobile-order tablet', outputWhat: 'a fair queue order', timeMins: 1, frequency: 'many-times-a-day', isShadow: true, needsJudgment: true, notes: 'No system merges in-store and mobile — I hold the real queue in my head.' }),
+    S(4, { action: 'Grind, dose and tamp for the espresso', tool: 'Grinder + portafilter', outputWhat: 'a prepared puck', timeMins: 1, frequency: 'many-times-a-day' }),
+    S(5, { action: 'Pull the shot and watch the colour and flow', tool: 'Espresso machine', outputWhat: 'a quality shot', timeMins: 1, frequency: 'many-times-a-day', needsJudgment: true, notes: 'Too pale or fast = scrap and re-grind.' }),
+    S(6, { action: 'Steam milk to the right texture and temperature', tool: 'Steam wand + jug', outputWhat: 'textured milk', timeMins: 1, frequency: 'many-times-a-day', needsJudgment: true }),
+    S(7, { action: 'Pour, assemble, name and call', tool: 'Cup + marker + voice', outputWhat: 'a delivered drink', outputDestination: 'A client / customer', timeMins: 1, frequency: 'many-times-a-day' }),
+    S(8, { action: 'Wipe the wand, knock the puck, reset between drinks', tool: 'Cloth + knock-box', outputWhat: 'a ready station', timeMins: 1, frequency: 'many-times-a-day' }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Floor partner', what: 'cleared tables and a pass-back of mugs at peak', typicalDelay: 'continuous' },
+    { direction: 'hand-to', who: 'Customer', what: 'the finished drink', typicalDelay: 'immediate at the bar' },
+  ],
+  exceptions: [
+    { trigger: 'A drink is sent back as wrong', whatYouDo: 'Remake immediately, apologise, do not log it anywhere — manager hears if it repeats', howOften: 'a few times a shift' },
+    { trigger: 'Grinder jams mid-rush', whatYouDo: 'Shout for backup beans, pre-grind on the spare, eat the 90 seconds', howOften: 'once or twice a week' },
+  ],
+});
+
+const chennaiRestaurant = () => mk({
+  role: 'Floor captain (small Chennai restaurant)',
+  context: 'A 40-seater mid-range Chennai restaurant doing dine-in plus Swiggy and Zomato',
+  outputName: 'a lunch service shift closed cleanly',
+  officialVersion: 'POS captures all orders; KOT to kitchen; food out within 12 min; rider handover under 3 min; EOD POS report reconciles cash, card, Swiggy, Zomato.',
+  instanceAnchor: 'last Saturday lunch — 1:10 PM to 3:00 PM',
+  trigger: 'Lunch service opens at 12:30 and orders land from three places at once',
+  steps: [
+    S(1, { action: 'Boot the POS, the two aggregator tablets, check KOT printer and paper', tool: 'POS + 2 tablets + KOT printer', outputWhat: 'systems ready', timeMins: 8, frequency: 'daily', frictionTags: ['rework'], notes: 'Half the time a tablet has logged out overnight.' }),
+    S(2, { action: 'Seat walk-ins, take order on captain pad', tool: 'Captain pad', inputSource: 'A client / customer', timeMins: 4, frequency: 'many-times-a-day', needsJudgment: true, notes: 'Read the table — kids hungry vs office lunch — and pace the KOT.' }),
+    S(3, { action: 'Re-key the captain pad into POS so KOT prints', tool: 'POS', outputDestination: 'kitchen', timeMins: 3, frequency: 'many-times-a-day', frictionTags: ['manual-transfer'], isPainful: true, notes: 'Twice writing the same order — paper, then POS.' }),
+    S(4, { action: 'Accept Swiggy / Zomato orders within the 30-second window', tool: 'Swiggy + Zomato tablets', outputDestination: 'kitchen', timeMins: 2, frequency: 'many-times-a-day', frictionTags: ['wait'], notes: 'Miss the window and order auto-cancels — rating drops.' }),
+    S(5, { action: 'Walk in and shout priorities at the chef so dine-in is not buried', tool: 'Voice + kitchen pass', timeMins: 3, frequency: 'many-times-a-day', isShadow: true, needsJudgment: true, frictionTags: ['movement', 'chasing'], notes: 'Nothing official lets me re-order the kitchen queue — I yell.' }),
+    S(6, { action: 'Serve dine-in, check it matches the order', tool: 'Tray + table number', outputDestination: 'A client / customer', timeMins: 4, frequency: 'many-times-a-day', frictionTags: ['movement'] }),
+    S(7, { action: 'Hand the packed order to the rider, scan the order code', tool: 'Swiggy / Zomato app', outputDestination: 'Delivery rider', timeMins: 3, frequency: 'many-times-a-day', frictionTags: ['wait', 'chasing'] }),
+    S(8, { action: 'Settle the bill — split, UPI, card, sometimes cash', tool: 'POS + UPI', inputSource: 'A client / customer', timeMins: 4, frequency: 'many-times-a-day', frictionTags: ['wait'], needsJudgment: true }),
+    S(9, { action: 'Note complaints, walkouts, missed Swiggy items in my spiral diary', tool: 'A4 diary', inputSource: 'My own notes', timeMins: 5, frequency: 'daily', isShadow: true, notes: 'Owner reads this every evening before he reads the POS.' }),
+    S(10, { action: 'EOD reconcile across POS, Swiggy, Zomato and cash', tool: 'POS report + aggregator dashboards + cash count', outputDestination: 'Owner', timeMins: 25, frequency: 'daily', frictionTags: ['manual-transfer', 'lookup'], isPainful: true, notes: 'Three systems, three totals — WhatsApp to owner.' }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Kitchen (chef)', what: 'cooked plates within ~12 min', typicalDelay: 'usually 10–15 min, longer at peak' },
+    { direction: 'wait-on', who: 'Swiggy / Zomato rider', what: 'arrival to pick up', typicalDelay: 'unpredictable — 2 to 15 min' },
+    { direction: 'hand-to', who: 'Owner', what: 'reconciled shift summary', typicalDelay: 'every evening' },
+  ],
+  exceptions: [
+    { trigger: 'Wrong item dispatched to a Swiggy customer', whatYouDo: 'Quietly remake, call the rider back if reachable, otherwise refund', howOften: 'two or three times a week' },
+    { trigger: 'Internet drops and tablets go offline', whatYouDo: 'Switch to phone hotspot, write to captain pad, key in when net returns', howOften: 'every monsoon week' },
+  ],
+});
+
+const hotelReception = () => mk({
+  role: 'Hotel front-office associate',
+  context: 'A 60-room business hotel in Chennai, mostly corporate guests, single shift at the desk',
+  outputName: 'a checked-in guest in their assigned room',
+  officialVersion: 'PMS guest arrival report; verify ID; assign per allocation; collect payment / authorisation; issue key card; brief on facilities; update PMS status.',
+  instanceAnchor: 'a corporate guest arriving on the 5 PM Bengaluru flight last Wednesday',
+  trigger: 'A guest walks up to the desk with a booking confirmation',
+  steps: [
+    S(1, { action: 'Greet, ask the name, pull the booking on the PMS', tool: 'PMS (IDS / Opera)', inputSource: 'A client / customer', timeMins: 2, frequency: 'many-times-a-day', frictionTags: ['lookup'] }),
+    S(2, { action: 'Verify photo ID (Aadhaar / passport) and scan / photograph it', tool: 'Scanner + phone camera', outputWhat: 'a verified guest ID', timeMins: 3, frequency: 'many-times-a-day', frictionTags: ['manual-transfer'], notes: 'Foreign guests = also fill C-Form for FRRO online.' }),
+    S(3, { action: 'Decide the room allotment — high floor, quiet side, repeat guest preferences', tool: 'PMS room rack + my memory of regulars', isShadow: true, needsJudgment: true, timeMins: 3, frequency: 'many-times-a-day', notes: 'PMS does not store the soft preferences — those live in my head.' }),
+    S(4, { action: 'Swipe card pre-auth or collect cash deposit; handle GST billing instructions', tool: 'EDC machine + PMS', outputWhat: 'a payment hold or deposit', timeMins: 4, frequency: 'many-times-a-day', frictionTags: ['wait'], needsJudgment: true }),
+    S(5, { action: 'Cut the key card and pre-program it on the door system', tool: 'Key encoder', outputWhat: 'an active key', timeMins: 1, frequency: 'many-times-a-day' }),
+    S(6, { action: 'Brief on Wi-Fi, breakfast, gym, late-checkout option', tool: 'Voice + welcome card', outputDestination: 'A client / customer', timeMins: 2, frequency: 'many-times-a-day' }),
+    S(7, { action: 'Call the bellboy and hand over to him for room escort', tool: 'Intercom', outputDestination: 'Bellboy', timeMins: 1, frequency: 'many-times-a-day', frictionTags: ['wait'] }),
+    S(8, { action: 'Update PMS to checked-in, message housekeeping that the room is occupied', tool: 'PMS + housekeeping WhatsApp group', outputDestination: 'Housekeeping', timeMins: 3, frequency: 'many-times-a-day', frictionTags: ['manual-transfer'], isShadow: true, notes: 'The WhatsApp ping is faster than the PMS auto-update they should already get.' }),
+    S(9, { action: 'Note any special request (extra towel, doctor referral, taxi) in my desk register', tool: 'Front-desk register', inputSource: 'My own notes', timeMins: 2, frequency: 'daily', isShadow: true },
+    ),
+  ],
+  handoffs: [
+    { direction: 'hand-to', who: 'Bellboy', what: 'guest escort to the room with luggage', typicalDelay: 'immediate' },
+    { direction: 'hand-to', who: 'Housekeeping', what: 'room status change to occupied', typicalDelay: 'immediate' },
+    { direction: 'wait-on', who: 'Housekeeping', what: 'late-vacated rooms to be made ready', typicalDelay: '30–60 min on peak check-in afternoons' },
+  ],
+  exceptions: [
+    { trigger: 'Overbooking — room category not available', whatYouDo: 'Offer an upgrade if possible, or arrange transfer to sister hotel and compensate', howOften: 'a few times a month' },
+    { trigger: 'Guest ID mismatch with booking name', whatYouDo: 'Ask for the booking voucher / company auth letter; escalate to duty manager if unclear', howOften: 'weekly' },
+  ],
+});
+
+const salonStylist = () => mk({
+  role: 'Senior hair stylist (mid-tier Chennai salon)',
+  context: 'A unisex salon, 6 stylists, walk-ins plus appointments, peak weekends',
+  outputName: 'a satisfied client leaving with a finished service',
+  officialVersion: 'POS appointment / walk-in; consultation; service per menu; payment + tip; rebooking; review request via app.',
+  instanceAnchor: 'a Saturday bridal trial booking last weekend',
+  trigger: 'Client checks in at reception and reception calls me to my chair',
+  steps: [
+    S(1, { action: 'Greet client at the chair, ask what they want today', tool: 'Voice + mirror', inputSource: 'A client / customer', timeMins: 5, frequency: 'many-times-a-day', needsJudgment: true, notes: 'What they ask for and what suits them are often different — that is the consult.' }),
+    S(2, { action: 'Look up their service history if returning, or ask preferences if new', tool: 'POS history + my own client diary', inputSource: 'My own notes', timeMins: 3, frequency: 'many-times-a-day', isShadow: true, notes: 'POS shows last service date; my diary tracks formula and chair-side notes.' }),
+    S(3, { action: 'Agree the plan and quote the price up front', tool: 'Voice + price list', outputWhat: 'an agreed service + price', timeMins: 3, frequency: 'many-times-a-day', needsJudgment: true, notes: 'Sometimes add-ons land late — better to surface them now.' }),
+    S(4, { action: 'Prep the chair, drape, sectioning, mix colour if needed', tool: 'Tools + colour bowl', timeMins: 8, frequency: 'many-times-a-day' }),
+    S(5, { action: 'Perform the service — cut / colour / treatment / blow-dry', tool: 'Scissors / brush / dryer', outputWhat: 'a finished look', timeMins: 60, frequency: 'many-times-a-day', needsJudgment: true }),
+    S(6, { action: 'Mid-way check with the client — too short? more layers?', tool: 'Mirror + voice', timeMins: 4, frequency: 'many-times-a-day', needsJudgment: true, notes: 'Cheaper to adjust now than to fix it after.' }),
+    S(7, { action: 'Finish, show the back with the hand mirror, suggest aftercare products', tool: 'Mirror + product shelf', timeMins: 6, frequency: 'many-times-a-day', needsJudgment: true }),
+    S(8, { action: 'Walk client to billing, suggest rebooking in 6 weeks', tool: 'POS + diary', outputDestination: 'Reception / POS', timeMins: 4, frequency: 'many-times-a-day', frictionTags: ['movement'] }),
+    S(9, { action: 'Note the formula and any soft preferences in my own client diary', tool: 'Personal client diary', inputSource: 'My own notes', timeMins: 3, frequency: 'many-times-a-day', isShadow: true, notes: 'POS will not save the formula — but the client will be back in 6 weeks expecting the same.' }),
+    S(10, { action: 'Clean and reset the chair for the next client', tool: 'Cleaning kit', timeMins: 5, frequency: 'many-times-a-day' }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Reception', what: 'next client called to chair', typicalDelay: 'minutes — depends on backlog' },
+    { direction: 'wait-on', who: 'Assistant', what: 'wash, shampoo, dry between stages', typicalDelay: 'continuous' },
+  ],
+  exceptions: [
+    { trigger: 'Client unhappy with colour result', whatYouDo: 'Acknowledge, propose a tone-down or wash-out, do not charge for the correction', howOften: 'once a week' },
+    { trigger: 'Walk-in arrives at booked slot', whatYouDo: 'Reception holds; I finish current; if delayed beyond 20 min, free service token offered', howOften: 'Saturdays' },
+  ],
+});
+
+const weddingHall = () => mk({
+  role: 'Wedding hall event manager (kalyana mandapam)',
+  context: 'A mid-size Chennai wedding hall doing 150–600 pax functions, in-house catering optional',
+  outputName: 'a wedding function delivered and the hall reset for the next event',
+  officialVersion: 'Booking sheet → vendor coordination (decor, catering, priest, music) → muhurtham timing → reception → cleanup → settlement.',
+  instanceAnchor: 'a 400-pax muhurtham + reception last Friday',
+  trigger: 'Function day starts — vendors arrive from 4 AM for muhurtham at 8 AM',
+  steps: [
+    S(1, { action: 'Open hall, switch on power, fans, AC, check washrooms', tool: 'Hall keys + checklist', timeMins: 20, frequency: 'few-times-a-week', frictionTags: ['movement'] }),
+    S(2, { action: 'Receive decor vendor, mark out stage area, dressing rooms, photo points', tool: 'Booking sheet + voice', outputDestination: 'Decor team', timeMins: 30, frequency: 'few-times-a-week', frictionTags: ['chasing'], needsJudgment: true, notes: 'Decor always wants more space than booked — I negotiate live.' }),
+    S(3, { action: 'Coordinate caterer arrival — kitchen access, gas cylinders, water connection', tool: 'Kitchen + intercom', outputDestination: 'Caterer', timeMins: 20, frequency: 'few-times-a-week', frictionTags: ['wait'] }),
+    S(4, { action: 'Brief sound and light vendor about muhurtham timing — no power cuts during the rituals', tool: 'Voice + cue sheet', timeMins: 15, frequency: 'few-times-a-week', isPainful: true, needsJudgment: true, notes: 'Muhurtham timing is non-negotiable. AC tripping during it is a career incident.' }),
+    S(5, { action: 'Receive priest, set up homa kund area, water, ghee, materials', tool: 'Pooja kit + voice', outputDestination: 'Priest', timeMins: 25, frequency: 'few-times-a-week', frictionTags: ['movement'] }),
+    S(6, { action: 'Greet host family, walk them through the schedule, handle their last-minute changes', tool: 'Voice + schedule sheet', inputSource: 'A client / customer', timeMins: 30, frequency: 'few-times-a-week', needsJudgment: true, isPainful: true, notes: 'Family is anxious — listen, absorb, do not argue. Re-plan in my head.' }),
+    S(7, { action: 'During the function: monitor flow — drinking water topped, AC working, sound clear, plates moving', tool: 'My eyes + walkie / phone', timeMins: 300, frequency: 'few-times-a-week', frictionTags: ['movement', 'chasing'] }),
+    S(8, { action: 'Handle escalations — missing relative car parking, vendor billing disputes, electricity trip', tool: 'Phone + people', frequency: 'few-times-a-week', needsJudgment: true, isShadow: true, notes: 'Most of these go in my personal day-book — never reported to owner.' }),
+    S(9, { action: 'After function — supervise cleanup, count chairs, check breakage', tool: 'Inventory checklist', outputDestination: 'Housekeeping', timeMins: 60, frequency: 'few-times-a-week', frictionTags: ['rework'] }),
+    S(10, { action: 'Settle final bill with host — extra hours, breakage, additional service', tool: 'Bill book + UPI', inputSource: 'My own notes', outputDestination: 'A client / customer', timeMins: 30, frequency: 'few-times-a-week', frictionTags: ['wait'], needsJudgment: true, notes: 'This is where the day can go negative — handled badly, no referral business.' }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Decor / caterer / priest / sound', what: 'on-time arrival per booking', typicalDelay: 'almost never all on time' },
+    { direction: 'hand-to', who: 'Owner', what: 'function summary + collected payment', typicalDelay: 'next morning' },
+  ],
+  exceptions: [
+    { trigger: 'Mid-function power cut', whatYouDo: 'Switch to generator, send someone to TANGEDCO, keep music playing on inverter', howOften: 'a few times a year' },
+    { trigger: 'Caterer runs short of food at peak', whatYouDo: 'Quietly arrange backup from nearby caterer, absorb the cost dispute later', howOften: 'occasional' },
+  ],
+});
+
+const movieTheatre = () => mk({
+  role: 'Multiplex screen manager (single-screen shift)',
+  context: 'A 5-screen multiplex in Chennai; my screen seats 220; show every 3 hours',
+  outputName: 'a show delivered, hall cleaned and turned over for the next show',
+  officialVersion: 'TMS schedules show; KDM loaded; trailers + film play on time; F&B service active; clean turnover under 15 minutes; incidents logged.',
+  instanceAnchor: 'the Friday 6:30 PM Tamil release first show, full house',
+  trigger: 'Previous show ends, turnover window opens',
+  steps: [
+    S(1, { action: 'Stand at the exit, usher last show out, watch for left items', tool: 'Voice + torch', timeMins: 5, frequency: 'many-times-a-day' }),
+    S(2, { action: 'Push cleaning crew in for popcorn / cup pickup', tool: 'Voice + cleaning gear', outputDestination: 'Housekeeping', timeMins: 8, frequency: 'many-times-a-day', frictionTags: ['chasing'] }),
+    S(3, { action: 'Check projection booth — content loaded for next show, audio test', tool: 'TMS / Doremi server', timeMins: 4, frequency: 'many-times-a-day', frictionTags: ['lookup'], needsJudgment: true, notes: 'KDM expiry trips on first weekend nights — check before doors open.' }),
+    S(4, { action: 'Open doors, ushers scan tickets, guide to row', tool: 'Ticket scanner + voice', inputSource: 'A client / customer', timeMins: 15, frequency: 'many-times-a-day', frictionTags: ['wait'] }),
+    S(5, { action: 'Run trailers + ads + film start cue', tool: 'TMS', timeMins: 2, frequency: 'many-times-a-day' }),
+    S(6, { action: 'Walk back of hall during first 10 min for sound / focus / latecomer issues', tool: 'Eyes + ears', timeMins: 10, frequency: 'many-times-a-day', needsJudgment: true, isShadow: true, notes: 'The first 10 min is when 90% of show complaints surface.' }),
+    S(7, { action: 'Handle F&B / phone-light complaints quietly during show', tool: 'Voice + torch', frequency: 'many-times-a-day', needsJudgment: true }),
+    S(8, { action: 'Log incidents — refund, broken seat, technical issue — in my shift diary', tool: 'Shift diary', inputSource: 'My own notes', timeMins: 5, frequency: 'daily', isShadow: true, notes: 'Manager scans my diary for the EOD report; the TMS log is incomplete.' }),
+    S(9, { action: 'Send EOD WhatsApp to manager — occupancy, incidents, F&B sale', tool: 'WhatsApp', outputDestination: 'Multiplex manager', timeMins: 5, frequency: 'daily' }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Housekeeping', what: 'cleaning between shows', typicalDelay: 'tight — 10 min target' },
+    { direction: 'wait-on', who: 'Projection (booth)', what: 'next show loaded and tested', typicalDelay: 'minutes' },
+  ],
+  exceptions: [
+    { trigger: 'KDM has expired and film will not start', whatYouDo: 'Call distributor, request emergency KDM, announce 15-min delay, free popcorn voucher', howOften: 'a couple of times a year, painfully' },
+    { trigger: 'Customer fight over seat allotment', whatYouDo: 'Verify ticket, escalate to duty manager, defuse, do not let it spill into the show', howOften: 'occasional weekends' },
+  ],
+});
+
+const realEstateAgent = () => mk({
+  role: 'Residential real-estate agent (Chennai)',
+  context: 'Self-employed broker covering Anna Nagar / Kilpauk; mix of rentals + sales',
+  outputName: 'a closed property transaction (rental or sale)',
+  officialVersion: 'List property → match to enquiry → site visit → negotiation → token → agreement → registration → commission.',
+  instanceAnchor: 'a 2 BHK Kilpauk rental closed last month',
+  trigger: 'An enquiry comes in from 99acres / MagicBricks / a referral WhatsApp',
+  steps: [
+    S(1, { action: 'Pick up the enquiry, qualify on the call — budget, area, urgency, family size', tool: 'Phone + 99acres app', inputSource: 'A client / customer', timeMins: 8, frequency: 'daily', needsJudgment: true, notes: 'I screen — half of enquiries are tyre-kickers wasting site visits.' }),
+    S(2, { action: 'Match to my mental shortlist of properties I know are available', tool: 'My own property book + WhatsApp groups with owners', inputSource: 'My own notes', timeMins: 10, frequency: 'daily', isShadow: true, notes: '99acres listings are stale; my Bibles are owner WhatsApp groups and my book.' }),
+    S(3, { action: 'Send 2–3 options on WhatsApp with photos and rent', tool: 'WhatsApp', outputDestination: 'A client / customer', timeMins: 6, frequency: 'daily' }),
+    S(4, { action: 'Coordinate site visit time with both owner and client', tool: 'Phone + WhatsApp', frequency: 'daily', frictionTags: ['chasing', 'wait'], notes: 'Three-way reschedule loop — often takes 2 days for one viewing.' }),
+    S(5, { action: 'Drive client to site, walk through 2–3 properties in one afternoon', tool: 'Two-wheeler / car', timeMins: 120, frequency: 'few-times-a-week', frictionTags: ['movement'] }),
+    S(6, { action: 'Read client reaction live — push, hold back, or kill the option', tool: 'Eyes + voice', needsJudgment: true, notes: 'Most clients won\'t say no on the spot — body language tells me.' }),
+    S(7, { action: 'Negotiate rent / deposit / move-in date between owner and client', tool: 'Phone calls back and forth', outputWhat: 'an agreed offer', frequency: 'few-times-a-week', frictionTags: ['wait', 'chasing'], needsJudgment: true, isPainful: true }),
+    S(8, { action: 'Collect token amount, draft rental agreement (or coordinate sale doc with sub-registrar)', tool: 'Template agreement + UPI', outputWhat: 'a signed agreement', timeMins: 30, frequency: 'monthly', frictionTags: ['manual-transfer'] }),
+    S(9, { action: 'Coordinate move-in, hand over keys, final paint / cleaning sign-off', tool: 'Voice + checklist', outputDestination: 'A client / customer', timeMins: 60, frequency: 'monthly' }),
+    S(10, { action: 'Invoice and collect commission from both sides (or per market norm)', tool: 'Bill book + UPI', outputWhat: 'commission received', frequency: 'monthly', frictionTags: ['wait', 'chasing'], notes: 'Sometimes the wait for commission is longer than the deal itself.' }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Property owner', what: 'access for viewing and final price', typicalDelay: 'unpredictable; many owners are abroad' },
+    { direction: 'wait-on', who: 'Client', what: 'decisions, deposit, document copies', typicalDelay: 'days' },
+  ],
+  exceptions: [
+    { trigger: 'Owner backs out after token', whatYouDo: 'Refund token, push alternate property, salvage relationship with client', howOften: 'a few times a year' },
+    { trigger: 'Client wants direct contact with owner to avoid commission', whatYouDo: 'Polite firm reminder of the agreed terms; if it persists, walk away', howOften: 'occasional' },
+  ],
+});
+
+export const HOSPITALITY: WorkedExample[] = [
+  { key: 'cafe-barista', label: 'Café barista at the morning rush', domain: 'Hospitality', region: 'Global', emoji: '☕',
+    summary: 'A barista pulling shots through the 8 AM queue — merging mobile orders into the in-store line in their head.',
+    behavioralContext: 'The bar is a flow state — interrupting it with a screen-prompt is more expensive than mis-prioritising an order. Baristas trust their muscle memory and queue-sense over any in-store system.',
+    fieldSpecificFit: 'An ambient queue display that merges mobile + in-store orders by ready-time, visible at a glance — not a click-through interface. Anything that demands attention at the bar will be ignored after week two.',
+    build: cafeBarista },
+  { key: 'chennai-restaurant', label: 'Lunch service at a Chennai restaurant', domain: 'Hospitality', region: 'Chennai, TN', emoji: '🍛',
+    summary: 'A floor captain juggling dine-in, Swiggy and Zomato — re-keying paper orders, shouting kitchen priorities, reconciling three systems at shift end.',
+    behavioralContext: 'Captains feel responsible for hospitality, not data — re-keying paper orders feels like the price of paying attention to the table. Asking them to type at the table is rejected as rude to the guest.',
+    fieldSpecificFit: 'Voice-to-order on a single hidden earpiece + a unified KOT board behind the kitchen pass. Reconciliation runs server-side overnight — captain only sees exceptions, not a 25-min EOD ritual.',
+    build: chennaiRestaurant },
+  { key: 'hotel-reception', label: 'Checking in a business hotel guest', domain: 'Hospitality', region: 'Chennai, TN', emoji: '🛎',
+    summary: 'A front-office associate with a PMS, a key encoder, and a head full of regular-guest preferences the system never stored.',
+    behavioralContext: 'Personalisation is the desk\'s pride — the soft preferences (quiet side, mineral water, no early calls) are guarded like a trade secret because remembering them is the job. A "preferences screen" feels like having that taken away.',
+    fieldSpecificFit: 'Pre-arrival WhatsApp note generated for the desk: "Mr. Iyer prefers high floor, late breakfast — last time you upgraded him to 1208." The desk still owns the warmth; the system just remembers.',
+    build: hotelReception },
+  { key: 'salon-stylist', label: 'A senior stylist through a Saturday chair', domain: 'Hospitality', region: 'Chennai, TN', emoji: '💇',
+    summary: 'A stylist consulting, cutting, colouring — and writing chair-side formulas into a personal client diary the POS cannot hold.',
+    behavioralContext: 'The diary is portable career capital — clients follow the stylist, not the salon. Centralising it into the POS is read as the salon trying to disintermediate the relationship.',
+    fieldSpecificFit: 'A formula app the STYLIST owns (their account, exports any time) that the salon happens to host. Adoption follows ownership; force-feed it as a salon system and it stays empty.',
+    build: salonStylist },
+  { key: 'wedding-hall', label: 'Running a wedding function day', domain: 'Hospitality', region: 'Chennai, TN', emoji: '💒',
+    summary: 'A kalyana-mandapam manager between decor, caterer, priest and host family — muhurtham timing non-negotiable, generator on standby.',
+    behavioralContext: 'A wedding is a once-in-a-lifetime event for the family — any visible system "managing" them is offensive. The manager\'s job is to look calm; the work happens in their personal day-book.',
+    fieldSpecificFit: 'A back-office vendor coordination app the manager uses out of sight; the family sees only the manager. Reminders go to vendors via WhatsApp, not to the family.',
+    build: weddingHall },
+  { key: 'movie-theatre', label: 'Turning over a multiplex screen between shows', domain: 'Hospitality', region: 'Chennai, TN', emoji: '🎬',
+    summary: 'A screen manager between TMS, KDM, ushers and a 10-minute cleanup target — the first 10 minutes of every show are where 90% of complaints come from.',
+    behavioralContext: 'Once a show starts, the manager\'s eyes are the only signal that matters — there is no time or instinct to open a portal mid-hall. The shift diary persists because it captures what the TMS log cannot.',
+    fieldSpecificFit: 'A walkie-button on the manager\'s phone that voice-tags the incident with timestamp and seat row — auto-routed to the right team. The diary becomes the audit trail, not the input form.',
+    build: movieTheatre },
+  { key: 'real-estate-agent', label: 'Closing a residential rental', domain: 'Hospitality', region: 'Chennai, TN', emoji: '🏠',
+    summary: 'A self-employed broker running enquiries through WhatsApp owner groups and a personal property book — 99acres is stale, the real listings are tribal.',
+    behavioralContext: 'The owner groups exist because trust is the moat — putting listings on a portal lets clients bypass the broker. Any "CRM" that asks the broker to digitise their book is asking them to dilute their own asset.',
+    fieldSpecificFit: 'A private broker workspace that ingests the WhatsApp owner groups they already use — auto-tagging properties to enquiries. The broker stays the gatekeeper; the tool just stops them losing leads in chat history.',
+    build: realEstateAgent },
+];

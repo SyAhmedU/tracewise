@@ -1,0 +1,253 @@
+// HEALTHCARE — PHC ANM, govt OP doc, ER nurse, pharmacist, lab tech, physio, dentist, counsellor
+import { S, mk, type WorkedExample } from './_shared';
+
+const anmAntenatalVisit = () => mk({
+  role: 'ANM (Auxiliary Nurse Midwife) at a rural PHC',
+  context: 'A sub-centre in rural Tamil Nadu covering three hamlets; one ANM, one ASHA per hamlet',
+  outputName: 'an antenatal home visit completed and reported',
+  officialVersion: 'RCH protocol: weekly home visit, BP / weight / Hb / fetal heart, IFA tablets, counsel, e-HMS entry same day, escalate HRP to MO.',
+  instanceAnchor: 'Kavitha (G2, 28 weeks), Vellaiyammal Nagar, visited yesterday',
+  trigger: 'The weekly visit plan is due — the ASHA tells me Kavitha is at home this morning',
+  steps: [
+    S(1, { action: "Pull the week's beneficiary list from PHC register and MCP-card stack", tool: 'PHC paper register + MCP cards', inputSource: 'A system / report', timeMins: 15, frequency: 'weekly', frictionTags: ['lookup'] }),
+    S(2, { action: 'WhatsApp / call ASHA, agree visit order', tool: 'Mobile phone', outputDestination: 'ASHA worker', timeMins: 10, frequency: 'weekly', frictionTags: ['chasing'], notes: 'ASHA knows who is home — no system has this.' }),
+    S(3, { action: 'Travel with visit bag (BP cuff, scale, Hb strip, IFA, fetoscope)', tool: 'Visit bag + two-wheeler', timeMins: 25, frequency: 'weekly', frictionTags: ['movement', 'wait'] }),
+    S(4, { action: 'Measure BP, weight, Hb; fetoscope for fetal heart', tool: 'BP cuff, scale, Hb strip, fetoscope', inputSource: 'A client / customer', timeMins: 20, frequency: 'weekly' }),
+    S(5, { action: 'Decide HRP referral based on readings + history + my gut from prior visits', tool: 'Judgment + RCH HRP criteria', needsJudgment: true, timeMins: 5, frequency: 'weekly', notes: 'BP rise from last week is in my head, not the system.' }),
+    S(6, { action: 'Counsel — diet, IFA adherence, danger signs, institutional delivery, JSY benefits', tool: 'Voice + IEC flipbook', needsJudgment: true, timeMins: 15, frequency: 'weekly' }),
+    S(7, { action: 'Hand IFA / calcium, update MCP card', tool: 'IFA + MCP card', outputDestination: 'A client / customer', timeMins: 8, frequency: 'weekly', frictionTags: ['manual-transfer'] }),
+    S(8, { action: 'Sit with my personal visit diary at end of round to log what I saw', tool: 'Personal diary', inputSource: 'My own notes', timeMins: 20, frequency: 'weekly', isShadow: true, needsJudgment: true, notes: 'High-risk tracker — what I actually use; portal is for reporting.' }),
+    S(9, { action: 'Copy readings to PHC antenatal register at sub-centre', tool: 'PHC antenatal register', inputSource: 'My own notes', timeMins: 20, frequency: 'weekly', frictionTags: ['manual-transfer'], isPainful: true }),
+    S(10, { action: 'Key the same data into the e-HMS portal', tool: 'TN e-HMS / RCH portal', outputDestination: 'TN HMIS', timeMins: 30, frequency: 'weekly', frictionTags: ['manual-transfer', 'wait'], isPainful: true, notes: 'Third time the same numbers — network drops half the time.' }),
+    S(11, { action: 'WhatsApp PHC MO about any HRP needing attention', tool: 'WhatsApp', outputDestination: 'PHC Medical Officer', timeMins: 5, frequency: 'weekly', isShadow: true, notes: 'Only channel that gets a same-day reply.' }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'ASHA worker', what: 'hamlet route + home availability', typicalDelay: 'morning' },
+    { direction: 'hand-to', who: 'PHC Medical Officer', what: 'HRP cases for review', typicalDelay: 'same day via WhatsApp' },
+    { direction: 'hand-to', who: 'Block Programme Manager', what: 'monthly HMIS reports', typicalDelay: 'monthly' },
+  ],
+  exceptions: [
+    { trigger: 'Network down for two days', whatYouDo: 'Keep register + diary current, batch enter day 3', howOften: 'most monsoon weeks' },
+    { trigger: 'Beneficiary not at home twice', whatYouDo: 'ASHA fixes time; otherwise mark missed and follow next round', howOften: 'two-three a month' },
+  ],
+});
+
+const govtOpDoctor = () => mk({
+  role: 'Outpatient doctor at a TN government hospital',
+  context: 'OP block at a district HQ hospital — high volume (150+ patients per session), with TN ePrescription system',
+  outputName: 'a patient seen, diagnosed, and prescribed / referred',
+  officialVersion: 'Triage → registration → call into OP → history + exam → diagnosis → ePrescription → counsel → next patient.',
+  instanceAnchor: 'a typical Tuesday morning OP session, 9 AM to 1 PM',
+  trigger: 'First patient token called by the OP attendant',
+  steps: [
+    S(1, { action: 'Open EHR / OP module, log in, check today\'s token list', tool: 'TN govt OP HIS', timeMins: 5, frequency: 'daily', frictionTags: ['wait'] }),
+    S(2, { action: 'Call patient by token, read past visits if returning', tool: 'Voice + HIS', inputSource: 'A client / customer', timeMins: 2, frequency: 'many-times-a-day', frictionTags: ['lookup'] }),
+    S(3, { action: 'Quick history — pinpoint the actual complaint behind the stated one', tool: 'Voice', timeMins: 4, frequency: 'many-times-a-day', needsJudgment: true, notes: 'Stated complaint vs real concern differ often — esp. elderly patients.' }),
+    S(4, { action: 'Brief exam — pulse, BP, listen, palpate; in 3-4 minutes max', tool: 'Stethoscope + BP cuff', timeMins: 4, frequency: 'many-times-a-day', needsJudgment: true }),
+    S(5, { action: 'Decide — manage here, order labs, refer to specialist, admit', tool: 'Clinical judgment + HIS referral form', outputWhat: 'a clinical decision', frequency: 'many-times-a-day', needsJudgment: true, isPainful: true }),
+    S(6, { action: 'Generate ePrescription on HIS — drug, dose, days, from list', tool: 'TN ePrescription module', outputDestination: 'Pharmacy', timeMins: 3, frequency: 'many-times-a-day', frictionTags: ['lookup', 'manual-transfer'], notes: 'Drug picker is slow at peak; many seniors use a paper script and let the assistant key it later.' }),
+    S(7, { action: 'Counsel — explain in Tamil, write key instructions on paper if literate, hand to family otherwise', tool: 'Voice + paper', outputDestination: 'A client / customer', timeMins: 3, frequency: 'many-times-a-day', isShadow: true }),
+    S(8, { action: 'Note unusual cases in my own follow-up book — for after-clinic review', tool: 'Personal pocket diary', inputSource: 'My own notes', frequency: 'daily', isShadow: true, notes: 'HIS does not surface unusual patterns; I track them myself.' }),
+    S(9, { action: 'Quick handover to assistant when leaving for ward round; she keeps token line moving', tool: 'Voice + token board', outputDestination: 'OP assistant', timeMins: 3, frequency: 'daily' }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'OP attendant', what: 'next patient brought in', typicalDelay: 'immediate' },
+    { direction: 'hand-to', who: 'Pharmacy / lab / specialist', what: 'ePrescription / lab request / referral', typicalDelay: 'patient walks across' },
+  ],
+  exceptions: [
+    { trigger: 'HIS down for an hour', whatYouDo: 'Switch to paper prescription, batch-enter when back, hold severe cases for follow-up', howOften: 'weekly' },
+    { trigger: 'VIP / political referral patient pushed in', whatYouDo: 'See out of turn briefly, document, return to token order — handle quietly', howOften: 'monthly' },
+  ],
+});
+
+const erNurse = () => mk({
+  role: 'Casualty / emergency triage nurse',
+  context: 'A 30-bed casualty at a Chennai corporate hospital; round-the-clock; lead triage nurse on shift',
+  outputName: 'a patient triaged and routed to the right bed / doctor',
+  officialVersion: 'Patient arrives → ESI triage (1–5) → vitals → fast-track or main ER → notify on-call → handover.',
+  instanceAnchor: 'a chest pain walk-in last Sunday night',
+  trigger: 'Walk-in patient or 108 ambulance arrives at the ER door',
+  steps: [
+    S(1, { action: 'Meet patient at door, eyeball severity in 10 seconds', tool: 'My eyes + first words', inputSource: 'A client / customer', timeMins: 1, frequency: 'many-times-a-day', needsJudgment: true, isPainful: true, notes: 'Triage is the most consequential thing I do — and entirely judgment.' }),
+    S(2, { action: 'Take vitals — BP, HR, SpO2, temp, pain score', tool: 'Vitals monitor + thermometer', timeMins: 3, frequency: 'many-times-a-day' }),
+    S(3, { action: 'Assign ESI level 1–5 and write on chart + ER tracker board', tool: 'Whiteboard + chart', outputWhat: 'a triaged patient', frequency: 'many-times-a-day', needsJudgment: true }),
+    S(4, { action: 'Route — resus bay (L1), main ER (L2-3), fast track (L4-5)', tool: 'Bed plan + voice', outputDestination: 'Bay / ER bed', frequency: 'many-times-a-day', frictionTags: ['movement'] }),
+    S(5, { action: 'For L1/L2 — call on-call doctor on intercom, push for arrival within 5 min', tool: 'Intercom + phone', outputDestination: 'On-call doctor', frequency: 'daily', frictionTags: ['chasing', 'wait'], needsJudgment: true }),
+    S(6, { action: 'Start initial orders per protocol — IV line, ECG, blood draw', tool: 'IV + ECG + sample tubes', timeMins: 8, frequency: 'many-times-a-day' }),
+    S(7, { action: 'Update electronic ER tracker so registration + billing can prep', tool: 'ER tracker HIS', outputDestination: 'Registration + billing', timeMins: 3, frequency: 'many-times-a-day', frictionTags: ['manual-transfer'] }),
+    S(8, { action: 'Hold the family — explain in Tamil, ask consent, point to billing', tool: 'Voice', outputDestination: 'A client / customer', timeMins: 5, frequency: 'many-times-a-day', isShadow: true, needsJudgment: true, notes: 'Family handling is half the job — never in any protocol.' }),
+    S(9, { action: 'Hand over to ward / ICU / discharge after stabilisation', tool: 'Handover sheet', outputDestination: 'Ward nurse / ICU', timeMins: 8, frequency: 'many-times-a-day' }),
+    S(10, { action: 'My personal ER shift diary — anything I want the next shift to know that HIS will not show', tool: 'Personal diary', inputSource: 'My own notes', frequency: 'daily', isShadow: true }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'On-call doctor', what: 'arrival at bedside for L1/L2', typicalDelay: '2–10 min, longer at night' },
+    { direction: 'hand-to', who: 'Ward nurse / ICU', what: 'stabilised patient with handover', typicalDelay: '5–15 min' },
+  ],
+  exceptions: [
+    { trigger: 'Mass casualty — RTA bringing 4 patients at once', whatYouDo: 'Activate Code Yellow, call backup nurses, triage rapidly, ignore non-urgent walk-ins', howOften: 'few times a year' },
+    { trigger: 'No bed available for incoming L2', whatYouDo: 'Discharge a fast-track, push a stable to ward early, escalate to duty manager', howOften: 'weekly' },
+  ],
+});
+
+const pharmacist = () => mk({
+  role: 'Retail pharmacist (chemist shop)',
+  context: 'A neighbourhood chemist in Chennai; sells both scheduled and OTC; deals with hospital prescriptions, online order pickup, walk-ins',
+  outputName: 'a prescription dispensed (or sale completed) and billed',
+  officialVersion: 'Receive prescription → verify schedule + dose → check stock → dispense → bill → counsel → log Schedule H1 if applicable.',
+  instanceAnchor: 'a hospital prescription brought in last evening — combined chronic medications',
+  trigger: 'Customer hands prescription across the counter, or PharmEasy order beeps',
+  steps: [
+    S(1, { action: 'Read prescription, decode handwriting, identify each drug', tool: 'Eyes + voice + drug reference app', inputSource: 'A client / customer', timeMins: 4, frequency: 'many-times-a-day', needsJudgment: true, notes: 'Some doctors write only brand names; some only generics — I switch as needed.' }),
+    S(2, { action: 'Verify dose and check for interactions on my own mental list', tool: 'Drug reference + my memory', isShadow: true, needsJudgment: true, frequency: 'many-times-a-day' }),
+    S(3, { action: 'Check shelf stock — bin location, expiry date', tool: 'Shelf + expiry sticker', timeMins: 6, frequency: 'many-times-a-day', frictionTags: ['lookup', 'movement'] }),
+    S(4, { action: 'If out of stock, offer equivalent (same salt) or call neighbour pharmacy', tool: 'Voice + phone', frequency: 'many-times-a-day', needsJudgment: true, frictionTags: ['chasing'] }),
+    S(5, { action: 'Cut strips per requested days, pack with dose schedule scribble on outer', tool: 'Scissors + pen', timeMins: 5, frequency: 'many-times-a-day' }),
+    S(6, { action: 'Bill on POS — apply discount per regular / loyalty', tool: 'POS', timeMins: 4, frequency: 'many-times-a-day' }),
+    S(7, { action: 'Counsel — when to take, with food / not, missed dose, side effects to watch', tool: 'Voice', outputDestination: 'A client / customer', timeMins: 3, frequency: 'many-times-a-day' }),
+    S(8, { action: 'Log Schedule H1 sale in the H1 register; keep the prescription copy', tool: 'H1 register', outputDestination: 'Regulatory file', frequency: 'daily', frictionTags: ['manual-transfer'] }),
+    S(9, { action: 'Handle PharmEasy / 1mg pickup — match to bay, scan, mark dispatched', tool: 'PharmEasy partner app', inputSource: 'A system / report', timeMins: 5, frequency: 'many-times-a-day', frictionTags: ['lookup'] }),
+    S(10, { action: 'EOD: check stock-out list, place wholesale order on WhatsApp / app', tool: 'Wholesale app + WhatsApp', outputDestination: 'Wholesaler', timeMins: 20, frequency: 'daily', frictionTags: ['chasing'] }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Wholesaler', what: 'morning replenishment', typicalDelay: 'next morning' },
+    { direction: 'hand-to', who: 'Online platform (PharmEasy etc.)', what: 'dispatched online order', typicalDelay: 'few times daily' },
+  ],
+  exceptions: [
+    { trigger: 'Prescription drug not in stock or unclear', whatYouDo: 'Call prescribing doctor for clarification or hold patient with apology', howOften: 'weekly' },
+    { trigger: 'Customer pushes for OTC of a scheduled drug', whatYouDo: 'Polite no, point to need for prescription, do not break — license at risk', howOften: 'daily' },
+  ],
+});
+
+const labTechnician = () => mk({
+  role: 'Pathology lab technician (diagnostic chain)',
+  context: 'A branch lab of a chain; collects samples, runs basic tests in-house, ships complex to central',
+  outputName: 'a verified lab report uploaded and patient notified',
+  officialVersion: 'Sample collected → barcoded → centrifuged → analyser run → report verified by pathologist → released on portal / SMS / WhatsApp.',
+  instanceAnchor: 'a fasting profile collected at 7:30 AM, ready by noon',
+  trigger: 'Patient walks in with a doctor\'s request or pre-paid online booking',
+  steps: [
+    S(1, { action: 'Pull request, verify patient ID, confirm tests + fasting status', tool: 'LIMS + voice', inputSource: 'A client / customer', timeMins: 3, frequency: 'many-times-a-day', frictionTags: ['lookup'] }),
+    S(2, { action: 'Draw blood / collect urine / swab as needed', tool: 'Vacutainers + needles', timeMins: 5, frequency: 'many-times-a-day', needsJudgment: true, notes: 'Bad vein? Two attempts, then call senior. Patient anxiety = part of the skill.' }),
+    S(3, { action: 'Label tubes with barcode, log into LIMS', tool: 'Label printer + LIMS', timeMins: 2, frequency: 'many-times-a-day' }),
+    S(4, { action: 'Sort — in-house run vs ship to central; pack ship-outs into cold chain bag', tool: 'Sort tray + cold bag', frequency: 'many-times-a-day', frictionTags: ['movement'] }),
+    S(5, { action: 'Run in-house tests — centrifuge, aliquot, load analyser', tool: 'Centrifuge + analyser', timeMins: 30, frequency: 'daily', frictionTags: ['wait'] }),
+    S(6, { action: 'QC check — controls run alongside; flag any drift', tool: 'QC chart', isShadow: true, needsJudgment: true, frequency: 'daily', notes: 'Daily QC chart sits on my desk — pathologist asks about it only on audit days.' }),
+    S(7, { action: 'Read results, eyeball for biological plausibility', tool: 'Analyser screen + experience', needsJudgment: true, frequency: 'daily', notes: 'A WBC of 80,000 — either leukaemia or sample error. I judge before sending up.' }),
+    S(8, { action: 'Upload to LIMS, route to pathologist for verification', tool: 'LIMS', outputDestination: 'Pathologist', timeMins: 5, frequency: 'daily', frictionTags: ['wait', 'approval'] }),
+    S(9, { action: 'Once verified, release — print / SMS / WhatsApp / portal upload', tool: 'LIMS dispatcher', outputDestination: 'A client / customer', timeMins: 4, frequency: 'many-times-a-day', frictionTags: ['manual-transfer'] }),
+    S(10, { action: 'Track critical-value calls — phone patient or doctor immediately', tool: 'Phone', isShadow: true, needsJudgment: true, frequency: 'weekly', notes: 'Critical-value SOP exists; the actual call decision is mine in the moment.' }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Pathologist (often remote)', what: 'verification + sign-off', typicalDelay: '30 min to a few hours' },
+    { direction: 'hand-to', who: 'Pickup / courier', what: 'ship-out samples in cold chain', typicalDelay: '2–3 hours' },
+  ],
+  exceptions: [
+    { trigger: 'Sample haemolysed or insufficient', whatYouDo: 'Call patient to re-attend; ship a fresh tube; apologise, no extra cost', howOften: 'weekly' },
+    { trigger: 'Critical value (very high glucose, low platelet)', whatYouDo: 'Call doctor / patient immediately; do not just release', howOften: 'few times a month' },
+  ],
+});
+
+const physiotherapist = () => mk({
+  role: 'Physiotherapist (clinic + home visits)',
+  context: 'A 2-room physio clinic, three therapists; also home visits for post-op / stroke patients',
+  outputName: 'a patient session completed and notes updated',
+  officialVersion: 'Assessment → goal-set → session per protocol → home exercise → re-assess → discharge.',
+  instanceAnchor: 'a knee post-op patient — third week, fifth session',
+  trigger: 'Patient arrives at scheduled appointment or I reach their home',
+  steps: [
+    S(1, { action: 'Greet, ask pain level today, sleep, exercise compliance', tool: 'Voice + pain scale', inputSource: 'A client / customer', timeMins: 5, frequency: 'many-times-a-day', needsJudgment: true }),
+    S(2, { action: 'Pull last session notes from my session file (paper + sometimes clinic app)', tool: 'Patient file + app', inputSource: 'My own notes', timeMins: 3, frequency: 'many-times-a-day', frictionTags: ['lookup'], isShadow: true, notes: 'Clinic app stores it; I read from paper because it has my margin notes the app cannot show.' }),
+    S(3, { action: 'Assess — range of motion, swelling, strength', tool: 'Goniometer + tape + hands', timeMins: 8, frequency: 'many-times-a-day', needsJudgment: true }),
+    S(4, { action: 'Adjust today\'s plan — push / hold / regress, based on assessment', tool: 'Judgment + protocol book', needsJudgment: true, frequency: 'many-times-a-day', notes: 'Sticking to protocol when patient is plateauing is worse than adjusting.' }),
+    S(5, { action: 'Session — manual therapy + exercises + modality (ultrasound / TENS)', tool: 'Bed + equipment', timeMins: 35, frequency: 'many-times-a-day' }),
+    S(6, { action: 'Teach 2 home exercises with video on patient\'s phone, demo myself', tool: 'My phone camera', outputDestination: 'A client / customer', timeMins: 7, frequency: 'many-times-a-day' }),
+    S(7, { action: 'Update session notes — paper file + clinic app', tool: 'Patient file + clinic app', inputSource: 'My own notes', timeMins: 6, frequency: 'many-times-a-day', frictionTags: ['manual-transfer'] }),
+    S(8, { action: 'Book next session, share home-exercise video on WhatsApp', tool: 'Calendar + WhatsApp', outputDestination: 'A client / customer', timeMins: 3, frequency: 'many-times-a-day' }),
+    S(9, { action: 'Travel to next clinic patient or to a home visit', tool: 'Two-wheeler', timeMins: 25, frequency: 'daily', frictionTags: ['movement'] }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Receptionist', what: 'next patient ready / appointment confirmation', typicalDelay: 'minutes' },
+    { direction: 'hand-to', who: 'Treating doctor', what: 'progress note for review', typicalDelay: 'weekly' },
+  ],
+  exceptions: [
+    { trigger: 'Patient reports red-flag (sudden severe pain, swelling, fever)', whatYouDo: 'Stop session, refer back to surgeon immediately, document', howOften: 'rare but critical' },
+    { trigger: 'Patient cancels last-minute', whatYouDo: 'Try to fill slot from waitlist; if cannot, use for paperwork backlog', howOften: 'weekly' },
+  ],
+});
+
+const dentist = () => mk({
+  role: 'Dentist (private clinic, owner-operator)',
+  context: 'A 2-chair private dental clinic in a Chennai residential area; mix of restorative, endo, hygiene',
+  outputName: 'a planned procedure completed on a patient in the chair',
+  officialVersion: 'Pull case file → confirm plan → anaesthesia → procedure → post-op instruction → bill → next appointment.',
+  instanceAnchor: 'a root canal — second visit of three',
+  trigger: 'Patient arrives for scheduled appointment',
+  steps: [
+    S(1, { action: 'Pull patient file, x-ray, prior visit notes', tool: 'Folder / Dexis software', inputSource: 'My own notes', timeMins: 4, frequency: 'many-times-a-day', frictionTags: ['lookup'] }),
+    S(2, { action: 'Brief chair-side update — pain? swelling? compliance with medication?', tool: 'Voice', inputSource: 'A client / customer', timeMins: 3, frequency: 'many-times-a-day', needsJudgment: true }),
+    S(3, { action: 'Set up tray, sterile instruments, suction, isolation', tool: 'Sterile tray + suction', timeMins: 5, frequency: 'many-times-a-day', frictionTags: ['rework'], notes: 'Anything missed mid-procedure = break in sterility = re-set.' }),
+    S(4, { action: 'Topical + local anaesthesia, wait 3–5 minutes', tool: 'Anaesthetic syringe', timeMins: 6, frequency: 'many-times-a-day', frictionTags: ['wait'] }),
+    S(5, { action: 'Procedure — caries removal, RCT obturation, crown prep, etc.', tool: 'Handpiece + files + materials', outputWhat: 'a completed clinical step', timeMins: 40, frequency: 'many-times-a-day', needsJudgment: true, isPainful: true, notes: 'Where the years of training pay off. Tiny millimetre judgments.' }),
+    S(6, { action: 'Take post-op x-ray if needed, verify on screen', tool: 'IOPA / OPG + viewer', timeMins: 5, frequency: 'few-times-a-week' }),
+    S(7, { action: 'Brief post-op — pain meds, diet, what to expect, when to call', tool: 'Voice + written script', outputDestination: 'A client / customer', timeMins: 5, frequency: 'many-times-a-day' }),
+    S(8, { action: 'Update Dexis notes + chart legend; book next visit', tool: 'Dexis + appointment book', inputSource: 'My own notes', timeMins: 6, frequency: 'many-times-a-day', frictionTags: ['manual-transfer'] }),
+    S(9, { action: 'Hand to receptionist for billing, claim form if insurance', tool: 'Voice + bill', outputDestination: 'Reception', timeMins: 3, frequency: 'many-times-a-day' }),
+    S(10, { action: 'Assistant cleans + sterilises the chair area before next patient', tool: 'Autoclave + wipes', outputDestination: 'Dental assistant', frequency: 'many-times-a-day' }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Dental assistant', what: 'sterile tray + suction support', typicalDelay: 'continuous' },
+    { direction: 'wait-on', who: 'Lab', what: 'crown / aligner returned for fitting', typicalDelay: '5–10 days' },
+  ],
+  exceptions: [
+    { trigger: 'Anaesthesia not taking after second top-up', whatYouDo: 'Postpone the procedure, reschedule, reassess approach', howOften: 'occasional' },
+    { trigger: 'Patient anxiety / panic mid-procedure', whatYouDo: 'Stop, sit them up, reassure, decide whether to continue or reschedule', howOften: 'weekly' },
+  ],
+});
+
+const counsellor = () => mk({
+  role: 'Mental health counsellor (private practice)',
+  context: 'Individual psychotherapy practice in Chennai; mix of clinic + tele-therapy clients',
+  outputName: 'a therapy session conducted and case notes written up',
+  officialVersion: 'Pre-session note review → 45-min session → in-session notes → post-session SOAP write-up → homework assigned → next session booked.',
+  instanceAnchor: 'a fourth session with a young professional working on anxiety',
+  trigger: 'Session start time arrives (in-person or video call)',
+  steps: [
+    S(1, { action: 'Re-read last session\'s notes and the formulation', tool: 'Therapy notes folder', inputSource: 'My own notes', timeMins: 8, frequency: 'many-times-a-day', frictionTags: ['lookup'] }),
+    S(2, { action: 'Take a breath, transition mode — I see 4–5 clients a day, presence matters', tool: 'Self', timeMins: 3, frequency: 'many-times-a-day', isShadow: true, needsJudgment: true, notes: 'Burnout is real. Two minutes of transition vs jumping cold.' }),
+    S(3, { action: 'Open session — check-in, mood scale, since-last-time', tool: 'Voice + mood chart', inputSource: 'A client / customer', timeMins: 6, frequency: 'many-times-a-day' }),
+    S(4, { action: 'Decide the focus this session — agenda the client brings vs what therapy needs', tool: 'Clinical judgment', needsJudgment: true, frequency: 'many-times-a-day' }),
+    S(5, { action: 'Conduct the work — CBT / ACT / IPT techniques, as the case calls', tool: 'Therapist skills', timeMins: 35, frequency: 'many-times-a-day', needsJudgment: true, isPainful: true, notes: 'Every session has a moment that decides what happens next week. Hard to teach.' }),
+    S(6, { action: 'Pencil quick in-session marks — words, themes, body language', tool: 'Personal notebook', inputSource: 'My own notes', isShadow: true, frequency: 'many-times-a-day', notes: 'Cannot type during session; coded shorthand only I can read.' }),
+    S(7, { action: 'Close session — summarise, agree homework, next session', tool: 'Voice + calendar', outputDestination: 'A client / customer', timeMins: 5, frequency: 'many-times-a-day' }),
+    S(8, { action: 'Write up SOAP note immediately after — themes, intervention, plan', tool: 'EHR / Word doc', inputSource: 'My own notes', timeMins: 12, frequency: 'many-times-a-day', frictionTags: ['manual-transfer'], isPainful: true, notes: 'Write within 30 min or lose accuracy. End-of-day backlog is worst case.' }),
+    S(9, { action: 'Bill — invoice + GST + payment link via UPI', tool: 'Invoice template + UPI', timeMins: 4, frequency: 'many-times-a-day' }),
+    S(10, { action: 'Self-care between sessions — water, walk, breath; otherwise day ends shattered', tool: 'Self', isShadow: true, frequency: 'many-times-a-day' }),
+  ],
+  handoffs: [
+    { direction: 'hand-to', who: 'Psychiatrist (referral)', what: 'medication review for cases needing it', typicalDelay: 'week or two' },
+    { direction: 'wait-on', who: 'Client', what: 'homework + intake forms', typicalDelay: 'between sessions' },
+  ],
+  exceptions: [
+    { trigger: 'Crisis disclosure (suicidal ideation)', whatYouDo: 'Run safety plan, contract for safety, involve family / psychiatrist; document fully', howOften: 'few times a year — high stakes' },
+    { trigger: 'No-show', whatYouDo: 'Send reminder, charge per policy, follow up on the rupture next session', howOften: 'weekly' },
+  ],
+});
+
+export const HEALTHCARE: WorkedExample[] = [
+  { key: 'anm-antenatal-visit', label: 'PHC antenatal home visit + HMIS', domain: 'Healthcare', region: 'Rural TN', emoji: '🩺',
+    summary: 'A village ANM doing the weekly antenatal round with the ASHA — paper register, personal diary of high-risk mothers, and the same readings typed into e-HMS a third time.', build: anmAntenatalVisit },
+  { key: 'govt-op-doctor', label: 'A government hospital OP morning', domain: 'Healthcare', region: 'Tamil Nadu', emoji: '👨‍⚕️',
+    summary: 'A district OP doctor seeing 150+ in a morning — token board, TN ePrescription, and a personal follow-up book HIS does not surface.', build: govtOpDoctor },
+  { key: 'er-nurse', label: 'Casualty triage at a Chennai ER', domain: 'Healthcare', region: 'Chennai, TN', emoji: '🚑',
+    summary: 'A triage nurse eyeballing severity in 10 seconds, holding the family, calling on-call — the most consequential judgment of the shift.', build: erNurse },
+  { key: 'pharmacist', label: 'Dispensing a hospital prescription', domain: 'Healthcare', region: 'Chennai, TN', emoji: '💊',
+    summary: 'A neighbourhood pharmacist decoding doctor handwriting, switching brand-for-generic, and juggling counter walk-ins against PharmEasy pickups.', build: pharmacist },
+  { key: 'lab-technician', label: 'Running a fasting blood profile', domain: 'Healthcare', region: 'India urban', emoji: '🧪',
+    summary: 'A lab tech from vein to verified report — analyser QC the pathologist only asks about on audit days, critical-value call made before release.', build: labTechnician },
+  { key: 'physiotherapist', label: 'A physio session — post-op knee', domain: 'Healthcare', region: 'Chennai, TN', emoji: '🦵',
+    summary: 'A physio reading the pain scale, deciding push or hold, teaching home exercise as a phone video before the next two-wheeler ride to a home visit.', build: physiotherapist },
+  { key: 'dentist', label: 'Dental clinic — root canal visit two', domain: 'Healthcare', region: 'Chennai, TN', emoji: '🦷',
+    summary: 'A dentist between Dexis notes, sterilisation breaks and millimetre judgments — anything missed mid-procedure means resetting the field.', build: dentist },
+  { key: 'counsellor', label: 'A psychotherapy session', domain: 'Healthcare', region: 'Chennai, TN', emoji: '🧠',
+    summary: 'A therapist between formulations, coded in-session shorthand and a SOAP note that must be written within 30 minutes or lose accuracy.', build: counsellor },
+];
