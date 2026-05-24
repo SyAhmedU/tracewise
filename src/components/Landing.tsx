@@ -64,7 +64,7 @@ export default function Landing({
       <div style={{ marginBottom: 36 }}>
         <h3 style={{ fontSize: '1.05rem', marginBottom: 4 }}>Start from a worked example</h3>
         <p style={{ fontSize: '.86rem', color: 'var(--text-soft)', marginBottom: 14, lineHeight: 1.5 }}>
-          Two real operating-world workflows, fully mapped — open one to see the method in action, then edit it or build your own.
+          {WORKED_EXAMPLES.length} real operating-world workflows — services, manufacturing, agri-trade, government and healthcare, mostly grounded in Tamil Nadu. Open one to see the method in action, then edit it or build your own.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
           {WORKED_EXAMPLES.map((ex) => (
@@ -77,13 +77,20 @@ export default function Landing({
                 padding: 18, boxShadow: 'var(--shadow)', transition: 'transform .12s',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '1.3rem' }}>{ex.emoji}</span>
                 <span style={{
-                  fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em',
+                  fontSize: '.66rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em',
                   color: 'var(--accent)', background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
                   borderRadius: 999, padding: '2px 9px',
                 }}>{ex.domain}</span>
+                {ex.region && (
+                  <span style={{
+                    fontSize: '.66rem', fontWeight: 600, letterSpacing: '.04em',
+                    color: 'var(--text-soft)', background: 'var(--code-bg)', border: '1px solid var(--border-strong)',
+                    borderRadius: 999, padding: '2px 9px',
+                  }}>📍 {ex.region}</span>
+                )}
               </div>
               <div style={{ fontWeight: 700, color: 'var(--text-h)', marginBottom: 5 }}>{ex.label}</div>
               <div style={{ fontSize: '.84rem', color: 'var(--text-soft)', lineHeight: 1.5 }}>{ex.summary}</div>

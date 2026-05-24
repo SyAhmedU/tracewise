@@ -75,12 +75,22 @@ AI-generated probes locally.
 
 ## Worked examples
 
-Two fully-mapped, real operating-world exemplars ship with the app and load with
-one click (`src/lib/examples.ts`) — they double as demos and methodological
-models:
+Twelve fully-mapped, real operating-world exemplars ship with the app and load
+with one click (`src/lib/examples.ts`). Mostly grounded in Tamil Nadu / India,
+mixed across services, manufacturing, agri-trade, government and healthcare —
+each one shows work-as-done diverging from the SOP, shadow tools, judgement
+steps, real handoffs and the exceptions where the unhappy path actually lives:
 
-- **Services** — settling a motor insurance claim (three re-keyings of the same numbers, a shadow tracker the team relies on, an assessor they chase).
-- **Manufacturing** — running a production work order (a personal notebook of machine offsets, borrowing material off other jobs, QC as the bottleneck).
+- **Services (global)** — café barista at the morning rush; settling a motor insurance claim.
+- **Services (urban India)** — lunch service at a Chennai restaurant (Swiggy + Zomato + dine-in); an L2 production-support engineer resolving a P2 incident at 2 AM.
+- **Professional services** — a Coimbatore CA filing a client's monthly GSTR-3B (WhatsApped invoice photos, 2B reconciliation, the 20th-of-the-month portal rush).
+- **Government (rural TN)** — a Village Administrative Officer issuing a community certificate through the e-Sevai portal.
+- **Healthcare (rural TN)** — an ANM doing a weekly antenatal home visit and reporting it into the e-HMS portal.
+- **Logistics** — an e-commerce order picker at a Chennai 3PL warehouse (RF scanner, ghost stock, tribal knowledge of where the bin really is).
+- **Manufacturing (global)** — running a CNC production work order from traveler to ERP.
+- **Manufacturing / exports (Tirupur)** — shipping a knitwear export order across in-house lines and job-work units.
+- **Agri-manufacturing (Erode)** — processing a paddy batch through a rice mill from weighbridge to godown.
+- **Agri-trade (Madurai)** — a morning of jasmine wholesale at Mattuthavani market.
 
 ## Data model
 
