@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { type Workflow, summarize } from '../lib/types';
 import { WORKED_EXAMPLES } from '../lib/examples';
 import { Button } from '../ui';
@@ -13,6 +14,21 @@ export default function Landing({
   onResume: () => void;
   onLoadExample: (key: string) => void;
 }) {
+  const [domain, setDomain] = useState<string | null>(null);
+
+  // domains in first-appearance order, each with its count, for the filter chips
+  const domains = useMemo(() => {
+    const order: string[] = [];
+    const counts = new Map<string, number>();
+    for (const ex of WORKED_EXAMPLES) {
+      if (!counts.has(ex.domain)) order.push(ex.domain);
+      counts.set(ex.domain, (counts.get(ex.domain) ?? 0) + 1);
+    }
+    return order.map((d) => ({ domain: d, count: counts.get(d) ?? 0 }));
+  }, []);
+
+  const visibleExamples = domain ? WORKED_EXAMPLES.filter((ex) => ex.domain === domain) : WORKED_EXAMPLES;
+
   return (
     <div style={{ textAlign: 'left' }}>
       {/* hero */}
@@ -66,8 +82,31 @@ export default function Landing({
         <p style={{ fontSize: '.86rem', color: 'var(--text-soft)', marginBottom: 14, lineHeight: 1.5 }}>
           {WORKED_EXAMPLES.length} real operating-world workflows — food, retail, hospitality, professional services, healthcare, government, manufacturing, agriculture and logistics, mostly grounded in Tamil Nadu. Each card reads off the same capture: the ground-level dynamic the trace surfaces (its shadow steps, judgment calls and friction) and where AI actually fits because of it. Open one to see the method in action, then edit it or build your own.
         </p>
+        {/* filter chips */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+          {([{ domain: null as string | null, count: WORKED_EXAMPLES.length }, ...domains]).map(({ domain: d, count }) => {
+            const active = domain === d;
+            return (
+              <button
+                key={d ?? '__all'}
+                onClick={() => setDomain(d)}
+                style={{
+                  font: 'inherit', cursor: 'pointer',
+                  fontSize: '.74rem', fontWeight: 600,
+                  color: active ? '#fff' : 'var(--text-soft)',
+                  background: active ? 'var(--accent)' : 'var(--code-bg)',
+                  border: `1px solid ${active ? 'var(--accent)' : 'var(--border-strong)'}`,
+                  borderRadius: 999, padding: '5px 13px', transition: 'background .12s',
+                }}
+              >
+                {d ?? 'All'} <span style={{ opacity: 0.7 }}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
-          {WORKED_EXAMPLES.map((ex) => (
+          {visibleExamples.map((ex) => (
             <button
               key={ex.key}
               onClick={() => onLoadExample(ex.key)}
