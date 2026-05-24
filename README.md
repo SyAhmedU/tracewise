@@ -68,6 +68,7 @@ npm install
 npm run dev      # vite dev server (probes use the offline heuristic unless you run `vercel dev`)
 npm run build    # tsc -b && vite build
 npm run lint
+npm test         # vitest run — engine coherence invariants over all 39 examples
 ```
 
 Set `GROQ_API_KEY` (see `.env.example`) and run via `vercel dev` to get
@@ -75,22 +76,41 @@ AI-generated probes locally.
 
 ## Worked examples
 
-Twelve fully-mapped, real operating-world exemplars ship with the app and load
-with one click (`src/lib/examples.ts`). Mostly grounded in Tamil Nadu / India,
-mixed across services, manufacturing, agri-trade, government and healthcare —
-each one shows work-as-done diverging from the SOP, shadow tools, judgement
-steps, real handoffs and the exceptions where the unhappy path actually lives:
+**39** fully-mapped, real operating-world exemplars ship with the app and load
+with one click. They live in `src/lib/examples/`, split per sector
+(`food`, `retail`, `hospitality`, `services`, `healthcare`, `government`,
+`manufacturing`, `agri`, `logistics`) and aggregated by `index.ts`; the shared
+`S()`/`mk()` builders and the `WorkedExample` type are in `examples/_shared.ts`.
+Mostly grounded in Tamil Nadu / India and spread right across the economy — each
+one shows work-as-done diverging from the SOP, shadow tools, judgement steps,
+real handoffs and the exceptions where the unhappy path actually lives:
 
-- **Services (global)** — café barista at the morning rush; settling a motor insurance claim.
-- **Services (urban India)** — lunch service at a Chennai restaurant (Swiggy + Zomato + dine-in); an L2 production-support engineer resolving a P2 incident at 2 AM.
-- **Professional services** — a Coimbatore CA filing a client's monthly GSTR-3B (WhatsApped invoice photos, 2B reconciliation, the 20th-of-the-month portal rush).
-- **Government (rural TN)** — a Village Administrative Officer issuing a community certificate through the e-Sevai portal.
-- **Healthcare (rural TN)** — an ANM doing a weekly antenatal home visit and reporting it into the e-HMS portal.
-- **Logistics** — an e-commerce order picker at a Chennai 3PL warehouse (RF scanner, ghost stock, tribal knowledge of where the bin really is).
-- **Manufacturing (global)** — running a CNC production work order from traveler to ERP.
-- **Manufacturing / exports (Tirupur)** — shipping a knitwear export order across in-house lines and job-work units.
-- **Agri-manufacturing (Erode)** — processing a paddy batch through a rice mill from weighbridge to godown.
-- **Agri-trade (Madurai)** — a morning of jasmine wholesale at Mattuthavani market.
+| Sector | n | Examples |
+|---|---|---|
+| Food prep | 3 | pani-puri cart, dosa stall, TN sweet shop on Diwali eve |
+| Retail | 6 | kirana, petrol pump, mall fashion, TN jewellery showroom, mobile shop, supermarket cashier |
+| Hospitality | 7 | café barista, Chennai restaurant, hotel reception, salon stylist, wedding hall, multiplex turnover, real-estate broker |
+| Professional services | 3 | motor insurance claim, Coimbatore CA GSTR-3B, L2 P2 incident |
+| Healthcare | 8 | PHC ANM antenatal visit, govt OP doctor, ER triage nurse, pharmacist, lab tech, physiotherapist, dentist, counsellor |
+| Government | 7 | VAO e-Sevai, traffic constable, RTO clerk, sub-registrar, sanitary inspector, BLO, PDS dealer |
+| Manufacturing | 2 | CNC production work order, Tirupur knitwear export |
+| Agriculture | 2 | Erode rice mill batch, Madurai jasmine wholesale |
+| Logistics | 1 | Chennai 3PL warehouse picker |
+
+Each example also carries two hand-written reads, surfaced on its landing card
+and in the *Where AI fits* stage next to the engine's scores:
+
+- **`behavioralContext`** — the field-specific human / cultural / trust dynamic
+  any intervention will hit. The shadow tools and personal registers are usually
+  *solutions* to this dynamic, not bugs — replacing them mechanically is what
+  breeds resistance (Star & Strauss, 1999).
+- **`fieldSpecificFit`** — what a realistic, field-appropriate intervention
+  actually looks like, anchored in that example's own captured signals (its
+  shadow steps, judgment calls and friction). Deliberately specific.
+
+The worked-example library is covered by a Vitest suite
+(`src/lib/automation.test.ts`) that asserts the engine never offers a
+judgment step as an automation opportunity — across all 39.
 
 ## Data model
 
