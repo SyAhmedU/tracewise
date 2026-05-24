@@ -1,6 +1,22 @@
 // Local persistence for Tracewise. Mirrors the gt_* / autosave conventions used
 // across Syed's projects (researchflow's rf_autosave, cadence's cadence_*).
-import { type Workflow, SCHEMA_VERSION } from './types';
+import { type Workflow, type Step, SCHEMA_VERSION } from './types';
+
+// Fill in fields added after a workflow was first saved, so older localStorage
+// records keep working (and controlled inputs never go uncontrolled).
+function normalize(w: Workflow): Workflow {
+  return {
+    ...w,
+    instanceAnchor: w.instanceAnchor ?? '',
+    steps: (w.steps ?? []).map((s: Step) => ({
+      ...s,
+      isPainful: s.isPainful ?? false,
+      frictionTags: s.frictionTags ?? [],
+    })),
+    handoffs: w.handoffs ?? [],
+    exceptions: w.exceptions ?? [],
+  };
+}
 
 const SAVED_KEY = 'tw_workflows';     // array of completed/saved workflows
 const AUTOSAVE_KEY = 'tw_autosave';   // single in-progress workflow + meta
@@ -36,6 +52,7 @@ export function listWorkflows(): Workflow[] {
   const all = read<Workflow[]>(SAVED_KEY, []);
   return all
     .filter((w) => w && w.schemaVersion === SCHEMA_VERSION)
+    .map(normalize)
     .sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
@@ -54,7 +71,8 @@ export function deleteWorkflow(id: string): void {
 }
 
 export function getWorkflow(id: string): Workflow | null {
-  return read<Workflow[]>(SAVED_KEY, []).find((w) => w.id === id) ?? null;
+  const w = read<Workflow[]>(SAVED_KEY, []).find((x) => x.id === id);
+  return w ? normalize(w) : null;
 }
 
 // ---- autosave (in-progress capture) ----
@@ -69,7 +87,7 @@ export function loadAutosave(): { wf: Workflow; stage: number } | null {
   // only resume if there is something worth resuming
   const hasContent = p.wf.outputName?.trim() || p.wf.steps.length > 0;
   if (!hasContent) return null;
-  return { wf: p.wf, stage: p.stage };
+  return { wf: normalize(p.wf), stage: p.stage };
 }
 
 export function writeAutosave(wf: Workflow, stage: number): void {

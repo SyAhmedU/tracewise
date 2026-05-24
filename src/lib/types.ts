@@ -53,6 +53,7 @@ export interface Step {
   frequency: Frequency | null;
   frictionTags: FrictionTag[];
   isShadow: boolean;              // unofficial but essential (shadow tool/step)
+  isPainful: boolean;             // the step they dread — fast subjective signal
   notes: string;
 }
 
@@ -79,6 +80,7 @@ export interface Workflow {
   role: string;            // the person's role (no real name needed)
   context: string;         // org / team / industry, optional free text
   outputName: string;      // the ONE recurring output being documented
+  instanceAnchor: string;  // the specific recent instance being recalled
   trigger: string;         // what kicks it off
   steps: Step[];
   handoffs: Handoff[];
@@ -109,6 +111,7 @@ export function newStep(order: number): Step {
     frequency: null,
     frictionTags: [],
     isShadow: false,
+    isPainful: false,
     notes: '',
   };
 }
@@ -129,6 +132,7 @@ export function newWorkflow(): Workflow {
     role: '',
     context: '',
     outputName: '',
+    instanceAnchor: '',
     trigger: '',
     steps: [],
     handoffs: [],
@@ -147,6 +151,7 @@ export interface FrictionSummary {
   toolSwitches: number;        // times the tool changes between consecutive steps
   handoffCount: number;
   shadowCount: number;
+  painCount: number;           // steps marked "dreaded"
   tagCounts: Record<FrictionTag, number>;
 }
 
@@ -157,6 +162,7 @@ export function summarize(wf: Workflow): FrictionSummary {
 
   let totalMinutes = 0;
   let shadowCount = 0;
+  let painCount = 0;
   const tools = new Set<string>();
   let toolSwitches = 0;
   let prevTool: string | null = null;
@@ -164,6 +170,7 @@ export function summarize(wf: Workflow): FrictionSummary {
   for (const s of wf.steps) {
     if (typeof s.timeMins === 'number') totalMinutes += s.timeMins;
     if (s.isShadow) shadowCount += 1;
+    if (s.isPainful) painCount += 1;
     for (const t of s.frictionTags) tagCounts[t] += 1;
     const tool = s.tool.trim().toLowerCase();
     if (tool) {
@@ -180,6 +187,7 @@ export function summarize(wf: Workflow): FrictionSummary {
     toolSwitches,
     handoffCount: wf.handoffs.length,
     shadowCount,
+    painCount,
     tagCounts,
   };
 }

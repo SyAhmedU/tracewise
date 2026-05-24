@@ -1,28 +1,27 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   type Step, type Workflow, type FrictionTag, type Frequency,
   FRICTION_TAGS, FREQUENCIES,
 } from '../lib/types';
 import { TOOL_SUGGESTIONS, SOURCE_SUGGESTIONS, STEP_FIELD_PROMPTS } from '../lib/questions';
 import { buildContext, fetchProbes } from '../lib/probe';
-import { Field, TextInput, TextArea, ChipRow, Button } from '../ui';
+import { Field, TextInput, TextArea, ChipRow } from '../ui';
 
 const rowStyle: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 };
 
+// Detail panel for one step. The step's `action` lives in the skeleton row above;
+// this panel enriches everything else. Probes load proactively on open.
 export default function StepEditor({
-  wf, step, isFirst, isLast, onChange, onMove, onDelete,
+  wf, step, onChange,
 }: {
   wf: Workflow;
   step: Step;
-  isFirst: boolean;
-  isLast: boolean;
   onChange: (fn: (s: Step) => void) => void;
-  onMove: (dir: -1 | 1) => void;
-  onDelete: () => void;
 }) {
   const [probes, setProbes] = useState<string[]>([]);
   const [probeSrc, setProbeSrc] = useState<'ai' | 'offline' | null>(null);
   const [loading, setLoading] = useState(false);
+  const fetchedFor = useRef<string>('');
 
   const dig = async () => {
     setLoading(true);
@@ -32,6 +31,16 @@ export default function StepEditor({
     setLoading(false);
   };
 
+  // Proactive: fetch follow-ups automatically the first time this step is opened
+  // with a real action, so the hidden work surfaces without anyone pressing a button.
+  useEffect(() => {
+    if (step.action.trim() && fetchedFor.current !== step.id) {
+      fetchedFor.current = step.id;
+      void dig();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step.id]);
+
   const toggleTag = (t: FrictionTag) => onChange((s) => {
     s.frictionTags = s.frictionTags.includes(t)
       ? s.frictionTags.filter((x) => x !== t)
@@ -39,42 +48,7 @@ export default function StepEditor({
   });
 
   return (
-    <div style={{
-      background: 'var(--surface)',
-      border: '1px solid var(--border)',
-      borderLeft: `3px solid ${step.isShadow ? 'var(--f-transfer)' : 'var(--accent-border)'}`,
-      borderRadius: 14,
-      boxShadow: 'var(--shadow)',
-      padding: 20,
-      marginBottom: 16,
-      textAlign: 'left',
-    }} className="tw-rise">
-      {/* header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-        <span style={{
-          width: 30, height: 30, borderRadius: 9, flexShrink: 0,
-          background: 'var(--warm-grad)', color: '#fff', fontWeight: 800, fontSize: '.85rem',
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        }}>{step.order}</span>
-        <strong style={{ fontSize: '.92rem', color: 'var(--text-h)' }}>
-          {step.action.trim() || `Step ${step.order}`}
-        </strong>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-          <button title="Move up" disabled={isFirst} onClick={() => onMove(-1)} style={iconBtn(isFirst)}>↑</button>
-          <button title="Move down" disabled={isLast} onClick={() => onMove(1)} style={iconBtn(isLast)}>↓</button>
-          <button title="Delete step" onClick={onDelete} style={{ ...iconBtn(false), color: 'var(--f-rework)' }}>✕</button>
-        </div>
-      </div>
-
-      <Field label={STEP_FIELD_PROMPTS.action}>
-        <TextArea
-          value={step.action}
-          placeholder="What you literally do…"
-          onChange={(e) => onChange((s) => { s.action = e.target.value; })}
-          style={{ minHeight: 56 }}
-        />
-      </Field>
-
+    <div style={{ paddingTop: 14, marginTop: 4, borderTop: '1px dashed var(--border)' }}>
       <Field label={STEP_FIELD_PROMPTS.tool}>
         <TextInput
           value={step.tool}
@@ -107,7 +81,6 @@ export default function StepEditor({
         </Field>
       </div>
 
-      {/* time + frequency */}
       <div style={{ ...rowStyle, marginBottom: 14 }}>
         <Field label="Roughly how long? (minutes)">
           <TextInput
@@ -132,7 +105,6 @@ export default function StepEditor({
         </Field>
       </div>
 
-      {/* friction tags */}
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: '.8rem', fontWeight: 600, color: 'var(--text-soft)', marginBottom: 8 }}>
           What is the friction here? (tap any that apply)
@@ -161,7 +133,6 @@ export default function StepEditor({
         </div>
       </div>
 
-      {/* shadow toggle */}
       <label style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer', marginBottom: 14, fontSize: '.85rem', color: 'var(--text)' }}>
         <input
           type="checkbox"
@@ -181,36 +152,33 @@ export default function StepEditor({
         />
       </Field>
 
-      {/* AI probes */}
-      <div style={{ marginTop: 6, paddingTop: 14, borderTop: '1px dashed var(--border)' }}>
-        <Button variant="soft" onClick={dig} disabled={loading || !step.action.trim()} style={{ fontSize: '.83rem' }}>
-          {loading ? 'Thinking…' : '🔍 Dig deeper into this step'}
-        </Button>
-        {probes.length > 0 && (
-          <div style={{ marginTop: 12 }} className="tw-fade">
-            <div style={{ fontSize: '.74rem', color: 'var(--text-soft)', marginBottom: 7 }}>
-              {probeSrc === 'ai' ? 'Follow-ups to consider:' : 'Follow-ups to consider (offline):'}
-            </div>
-            {probes.map((p, i) => (
-              <div key={i} style={{
-                fontSize: '.85rem', color: 'var(--text-h)', background: 'var(--accent-bg)',
-                border: '1px solid var(--accent-border)', borderRadius: 10, padding: '10px 13px', marginBottom: 8,
-                lineHeight: 1.5,
-              }}>
-                {p}
-              </div>
-            ))}
+      {/* Proactive AI probes */}
+      <div style={{ marginTop: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: probes.length || loading ? 10 : 0 }}>
+          <span style={{ fontSize: '.74rem', color: 'var(--text-soft)' }}>
+            {loading ? 'Looking for hidden work…' : probes.length ? (probeSrc === 'ai' ? 'Follow-ups worth answering:' : 'Follow-ups worth answering (offline):') : ''}
+          </span>
+          <button
+            type="button"
+            onClick={dig}
+            disabled={loading || !step.action.trim()}
+            title="Get fresh follow-ups"
+            style={{
+              marginLeft: 'auto', fontSize: '.74rem', fontWeight: 600, padding: '4px 10px', borderRadius: 999,
+              border: '1px solid var(--border-strong)', background: 'transparent', color: 'var(--text)',
+              cursor: loading ? 'default' : 'pointer', opacity: loading || !step.action.trim() ? .5 : 1,
+            }}
+          >↻ probe</button>
+        </div>
+        {probes.map((p, i) => (
+          <div key={i} className="tw-fade" style={{
+            fontSize: '.85rem', color: 'var(--text-h)', background: 'var(--accent-bg)',
+            border: '1px solid var(--accent-border)', borderRadius: 10, padding: '10px 13px', marginBottom: 8, lineHeight: 1.5,
+          }}>
+            {p}
           </div>
-        )}
+        ))}
       </div>
     </div>
   );
-}
-
-function iconBtn(disabled: boolean): React.CSSProperties {
-  return {
-    width: 30, height: 30, borderRadius: 8, border: '1px solid var(--border-strong)',
-    background: 'transparent', color: 'var(--text)', cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? .35 : 1, fontSize: '.9rem', lineHeight: 1,
-  };
 }

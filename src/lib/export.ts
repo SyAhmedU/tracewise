@@ -10,6 +10,7 @@ export function toMarkdown(wf: Workflow): string {
   L.push('');
   L.push(`**Role:** ${wf.role || '—'}  `);
   if (wf.context.trim()) L.push(`**Context:** ${wf.context}  `);
+  if (wf.instanceAnchor.trim()) L.push(`**Recalled instance:** ${wf.instanceAnchor}  `);
   L.push(`**Trigger:** ${wf.trigger || '—'}  `);
   L.push(`**Documented:** ${new Date(wf.updatedAt).toLocaleString()}`);
   L.push('');
@@ -18,7 +19,8 @@ export function toMarkdown(wf: Workflow): string {
   L.push('## Steps');
   L.push('');
   wf.steps.forEach((st) => {
-    L.push(`### ${st.order}. ${st.action || '(unnamed step)'}${st.isShadow ? '  _(shadow / unofficial)_' : ''}`);
+    const marks = [st.isShadow ? 'shadow / unofficial' : '', st.isPainful ? 'dreaded' : ''].filter(Boolean).join(', ');
+    L.push(`### ${st.order}. ${st.action || '(unnamed step)'}${marks ? `  _(${marks})_` : ''}`);
     L.push(`- **Tool:** ${st.tool || '—'}`);
     L.push(`- **Needs:** ${st.inputWhat || '—'}${st.inputSource ? ` (from ${st.inputSource})` : ''}`);
     L.push(`- **Produces:** ${st.outputWhat || '—'}${st.outputDestination ? ` → ${st.outputDestination}` : ''}`);
@@ -54,6 +56,7 @@ export function toMarkdown(wf: Workflow): string {
   L.push(`- Distinct tools: ${s.toolCount} (tool switches: ${s.toolSwitches})`);
   L.push(`- Handoffs / wait points: ${s.handoffCount}`);
   L.push(`- Shadow steps: ${s.shadowCount}`);
+  L.push(`- Dreaded steps: ${s.painCount}`);
   const tags = (Object.entries(s.tagCounts) as [FrictionTag, number][]).filter(([, n]) => n > 0);
   if (tags.length) L.push(`- Friction flags: ${tags.map(([t, n]) => `${tagLabel(t)} ×${n}`).join(', ')}`);
   L.push('');

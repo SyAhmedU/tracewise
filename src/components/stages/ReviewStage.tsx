@@ -15,10 +15,15 @@ export default function ReviewStage({ wf }: { wf: Workflow }) {
         background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16,
         boxShadow: 'var(--shadow)', padding: 24, marginBottom: 20, textAlign: 'left',
       }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: wf.instanceAnchor ? 6 : 18, flexWrap: 'wrap' }}>
           <h3 style={{ fontSize: '1.15rem' }}>{wf.outputName || 'Your workflow'}</h3>
           <span style={{ fontSize: '.8rem', color: 'var(--text-soft)' }}>{wf.role}</span>
         </div>
+        {wf.instanceAnchor && (
+          <div style={{ fontSize: '.8rem', color: 'var(--text-soft)', marginBottom: 18, fontStyle: 'italic' }}>
+            As actually done: {wf.instanceAnchor}
+          </div>
+        )}
 
         {/* trigger */}
         <Node kind="trigger" label="Triggered by" text={wf.trigger || '—'} />
@@ -39,6 +44,7 @@ export default function ReviewStage({ wf }: { wf: Workflow }) {
               }}>{st.order}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, color: 'var(--text-h)', marginBottom: 3 }}>
+                  {st.isPainful && <span title="Step they dread" style={{ marginRight: 6 }}>😖</span>}
                   {st.action || '(unnamed step)'}
                   {st.isShadow && <span style={{ marginLeft: 8, fontSize: '.7rem', color: 'var(--f-transfer)', fontWeight: 700 }}>SHADOW</span>}
                 </div>
@@ -109,6 +115,7 @@ export default function ReviewStage({ wf }: { wf: Workflow }) {
           <Stat n={s.toolCount} label="tools" sub={`${s.toolSwitches} switches`} />
           <Stat n={s.handoffCount} label="handoffs" />
           <Stat n={s.shadowCount} label="shadow steps" accent={s.shadowCount > 0} />
+          <Stat n={s.painCount} label="dreaded steps" accent={s.painCount > 0} />
         </div>
         {activeTags.length > 0 && (
           <div>
