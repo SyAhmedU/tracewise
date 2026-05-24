@@ -1,0 +1,81 @@
+// Local persistence for Tracewise. Mirrors the gt_* / autosave conventions used
+// across Syed's projects (researchflow's rf_autosave, cadence's cadence_*).
+import { type Workflow, SCHEMA_VERSION } from './types';
+
+const SAVED_KEY = 'tw_workflows';     // array of completed/saved workflows
+const AUTOSAVE_KEY = 'tw_autosave';   // single in-progress workflow + meta
+const AUTOSAVE_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days, matches researchflow
+
+interface AutosavePayload {
+  ts: number;
+  stage: number;
+  wf: Workflow;
+}
+
+function read<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function write(key: string, value: unknown): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* quota / private mode — fail silent, app still works in-memory */
+  }
+}
+
+// ---- saved workflows ----
+
+export function listWorkflows(): Workflow[] {
+  const all = read<Workflow[]>(SAVED_KEY, []);
+  return all
+    .filter((w) => w && w.schemaVersion === SCHEMA_VERSION)
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+export function saveWorkflow(wf: Workflow): void {
+  const all = read<Workflow[]>(SAVED_KEY, []);
+  const idx = all.findIndex((w) => w.id === wf.id);
+  const stamped = { ...wf, updatedAt: Date.now() };
+  if (idx >= 0) all[idx] = stamped;
+  else all.push(stamped);
+  write(SAVED_KEY, all);
+}
+
+export function deleteWorkflow(id: string): void {
+  const all = read<Workflow[]>(SAVED_KEY, []).filter((w) => w.id !== id);
+  write(SAVED_KEY, all);
+}
+
+export function getWorkflow(id: string): Workflow | null {
+  return read<Workflow[]>(SAVED_KEY, []).find((w) => w.id === id) ?? null;
+}
+
+// ---- autosave (in-progress capture) ----
+
+export function loadAutosave(): { wf: Workflow; stage: number } | null {
+  const p = read<AutosavePayload | null>(AUTOSAVE_KEY, null);
+  if (!p || !p.wf) return null;
+  if (Date.now() - p.ts > AUTOSAVE_TTL_MS) {
+    clearAutosave();
+    return null;
+  }
+  // only resume if there is something worth resuming
+  const hasContent = p.wf.outputName?.trim() || p.wf.steps.length > 0;
+  if (!hasContent) return null;
+  return { wf: p.wf, stage: p.stage };
+}
+
+export function writeAutosave(wf: Workflow, stage: number): void {
+  write(AUTOSAVE_KEY, { ts: Date.now(), stage, wf } satisfies AutosavePayload);
+}
+
+export function clearAutosave(): void {
+  try { localStorage.removeItem(AUTOSAVE_KEY); } catch { /* ignore */ }
+}
