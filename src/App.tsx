@@ -11,12 +11,19 @@ import Wizard from './components/Wizard';
 
 type Mode = 'home' | 'wizard';
 
+/** The example-level interpretation that travels with a loaded worked example —
+ * shown in the Automation-Fit stage next to the engine's computed scores so the
+ * human read and the deterministic output sit side by side. Null for blank or
+ * saved/reopened workflows. */
+export type ExampleRead = { label: string; behavioralContext: string; fieldSpecificFit: string };
+
 export default function App() {
   const [mode, setMode] = useState<Mode>('home');
   const [wf, setWf] = useState<Workflow | null>(null);
   const [stage, setStage] = useState(0);
   const [workflows, setWorkflows] = useState<Workflow[]>(() => listWorkflows());
   const [resume, setResume] = useState<{ wf: Workflow; stage: number } | null>(() => loadAutosave());
+  const [exampleRead, setExampleRead] = useState<ExampleRead | null>(null);
 
   // autosave the in-progress capture
   useEffect(() => {
@@ -33,13 +40,16 @@ export default function App() {
     });
   };
 
-  const startNew = () => { setWf(newWorkflow()); setStage(0); setMode('wizard'); };
+  const startNew = () => { setExampleRead(null); setWf(newWorkflow()); setStage(0); setMode('wizard'); };
   const loadExample = (key: string) => {
     const ex = WORKED_EXAMPLES.find((e) => e.key === key);
-    if (ex) { setWf(ex.build()); setStage(0); setMode('wizard'); window.scrollTo(0, 0); }
+    if (ex) {
+      setExampleRead({ label: ex.label, behavioralContext: ex.behavioralContext, fieldSpecificFit: ex.fieldSpecificFit });
+      setWf(ex.build()); setStage(0); setMode('wizard'); window.scrollTo(0, 0);
+    }
   };
-  const open = (id: string) => { const w = getWorkflow(id); if (w) { setWf(w); setStage(0); setMode('wizard'); } };
-  const doResume = () => { if (resume) { setWf(resume.wf); setStage(resume.stage); setMode('wizard'); } };
+  const open = (id: string) => { const w = getWorkflow(id); if (w) { setExampleRead(null); setWf(w); setStage(0); setMode('wizard'); } };
+  const doResume = () => { if (resume) { setExampleRead(null); setWf(resume.wf); setStage(resume.stage); setMode('wizard'); } };
 
   const saveExit = () => {
     if (wf && (wf.outputName.trim() || wf.steps.length > 0)) saveWorkflow(wf);
@@ -72,7 +82,7 @@ export default function App() {
           />
         )}
         {mode === 'wizard' && wf && (
-          <Wizard wf={wf} update={update} stage={stage} setStage={setStage} onSaveExit={saveExit} />
+          <Wizard wf={wf} update={update} stage={stage} setStage={setStage} onSaveExit={saveExit} exampleRead={exampleRead} />
         )}
       </main>
     </div>

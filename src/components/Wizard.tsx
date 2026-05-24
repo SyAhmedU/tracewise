@@ -1,4 +1,5 @@
 import type { Workflow } from '../lib/types';
+import type { ExampleRead } from '../App';
 import { STAGES } from '../lib/questions';
 import { Button } from '../ui';
 import FrameStage from './stages/FrameStage';
@@ -10,13 +11,14 @@ import ReviewStage from './stages/ReviewStage';
 import OpportunitiesStage from './stages/OpportunitiesStage';
 
 export default function Wizard({
-  wf, update, stage, setStage, onSaveExit,
+  wf, update, stage, setStage, onSaveExit, exampleRead,
 }: {
   wf: Workflow;
   update: (fn: (d: Workflow) => void) => void;
   stage: number;
   setStage: (n: number) => void;
   onSaveExit: () => void;
+  exampleRead?: ExampleRead | null;
 }) {
   const meta = STAGES[stage];
 
@@ -73,7 +75,7 @@ export default function Wizard({
         {meta.id === 'handoffs' && <HandoffsStage wf={wf} update={update} />}
         {meta.id === 'exceptions' && <ExceptionsStage wf={wf} update={update} />}
         {meta.id === 'review' && <ReviewStage wf={wf} />}
-        {meta.id === 'opportunities' && <OpportunitiesStage wf={wf} />}
+        {meta.id === 'opportunities' && <OpportunitiesStage wf={wf} exampleRead={exampleRead} />}
       </div>
 
       {/* footer nav */}

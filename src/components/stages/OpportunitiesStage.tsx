@@ -7,6 +7,7 @@
 // model (Parasuraman, Sheridan & Wickens, 2000) — see lib/automation.ts.
 import { useMemo, useState } from 'react';
 import type { Workflow } from '../../lib/types';
+import type { ExampleRead } from '../../App';
 import {
   analyzeWorkflow, ARCHETYPES, LOA_LEVEL_LABEL, LOA_STAGE_LABEL, QUADRANT_LABEL,
   type StepOpportunity, type Quadrant,
@@ -33,7 +34,7 @@ const QUADRANT_HINT: Record<Quadrant, string> = {
 
 type SuggestionState = { loading: boolean; text: string | null; source: 'ai' | 'offline' | null };
 
-export default function OpportunitiesStage({ wf }: { wf: Workflow }) {
+export default function OpportunitiesStage({ wf, exampleRead }: { wf: Workflow; exampleRead?: ExampleRead | null }) {
   const analysis = useMemo(() => analyzeWorkflow(wf), [wf]);
   const [suggestions, setSuggestions] = useState<Record<string, SuggestionState>>({});
 
@@ -97,6 +98,35 @@ export default function OpportunitiesStage({ wf }: { wf: Workflow }) {
           </p>
         </details>
       </div>
+
+      {/* ---- the human read behind this worked example ---- */}
+      {exampleRead && (
+        <div style={{
+          background: 'color-mix(in srgb, var(--accent) 5%, var(--surface))',
+          border: '1px solid var(--accent-border)', borderRadius: 16, padding: 24, textAlign: 'left',
+        }}>
+          <div style={{ fontSize: '.72rem', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--accent)', fontWeight: 700, marginBottom: 8 }}>
+            The human read behind the scores
+          </div>
+          <p style={{ fontSize: '.82rem', color: 'var(--text-soft)', lineHeight: 1.55, marginBottom: 16 }}>
+            This worked example ships with a hand-written interpretation. Read it against the deterministic scores above — the engine ranks by burden and fit; this is the ground-level dynamic that decides whether a fit is real.
+          </p>
+          <div style={{
+            fontSize: '.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em',
+            color: 'var(--text-soft)', marginBottom: 3,
+          }}>Ground-level dynamic</div>
+          <div style={{ fontSize: '.9rem', color: 'var(--text)', lineHeight: 1.6, marginBottom: 14 }}>
+            {exampleRead.behavioralContext}
+          </div>
+          <div style={{
+            fontSize: '.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em',
+            color: 'var(--accent)', marginBottom: 3,
+          }}>Where AI fits</div>
+          <div style={{ fontSize: '.9rem', color: 'var(--text)', lineHeight: 1.6 }}>
+            {exampleRead.fieldSpecificFit}
+          </div>
+        </div>
+      )}
 
       {/* ---- matrix ---- */}
       <div style={{
