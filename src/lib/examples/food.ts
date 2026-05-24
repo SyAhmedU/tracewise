@@ -86,9 +86,18 @@ const sweetShop = () => mk({
 
 export const FOOD: WorkedExample[] = [
   { key: 'street-food-vendor', label: 'An evening pani-puri cart', domain: 'Food prep', region: 'Chennai, TN', emoji: '🍢',
-    summary: 'A cart vendor running a trust-system mental tally — UPI sticker, mint water that is yesterday\'s judgment, and a tarp for the monsoon evening.', build: streetFoodVendor },
+    summary: 'A cart vendor running a trust-system mental tally — UPI sticker, mint water that is yesterday\'s judgment, and a tarp for the monsoon evening.',
+    behavioralContext: 'The mental plate-tally is a trust contract with regulars — the capture shows it tagged as a shadow step precisely because slotting a POS between vendor and customer would slow the queue and signal distrust. "An extra plate on a dispute, rarely" is cheaper than that friction.',
+    fieldSpecificFit: 'Nothing at the cart itself. The only steps the trace marks as friction are the day-end cash + UPI-screenshot count and the pocket-notebook reorder list — fold those into one voice-note that tots takings and texts the morning order to the mint vendor. Leave the serving flow analog.',
+    build: streetFoodVendor },
   { key: 'dosa-cart', label: 'A dosa stall at the morning rush', domain: 'Food prep', region: 'Chennai, TN', emoji: '🥞',
-    summary: 'A stall cook on the tawa from 6 AM — order by voice, "anna usual" for regulars, batter judgment when the night was cold.', build: dosaCart },
+    summary: 'A stall cook on the tawa from 6 AM — order by voice, "anna usual" for regulars, batter judgment when the night was cold.',
+    behavioralContext: 'Every rush step the trace records is hands-on the tawa with a needs-judgment flag — the flip-timing where quality lives. A device needing a glance or tap steals exactly that attention, and "anna usual" is relationship memory, not a field to fill.',
+    fieldSpecificFit: 'Do not touch the rush. The capture only surfaces two friction points worth a tool — the cold-night batter gamble (a ferment-time nudge) and the morning veg top-up (a recurring WhatsApp order). The pour, flip and tally stay where the judgment tags say they belong: in the cook\'s hands.',
+    build: dosaCart },
   { key: 'sweet-shop', label: 'TN sweet shop on Diwali eve', domain: 'Food prep', region: 'Tamil Nadu', emoji: '🍬',
-    summary: 'Counter staff balancing online pickups, gift-box assortments and a queue — packing is the bottleneck, eye-based stock the only signal.', build: sweetShop },
+    summary: 'Counter staff balancing online pickups, gift-box assortments and a queue — packing is the bottleneck, eye-based stock the only signal.',
+    behavioralContext: 'The trace pins the single painful step at packing, not billing — and tags eye-based replenishment as a shadow step because the POS lags reality at festival peak. The staff\'s eye beats the system here, so asking them to update stock mid-rush would only widen the lag.',
+    fieldSpecificFit: 'Aim at the step the capture marked painful: a festival-mode packing station (pre-folded boxes, a parallel packer) and a kitchen-facing live-stock screen fed by counter weigh-outs, retiring the eye-based guess without making the counter type. The bill flow the trace shows as smooth is left alone.',
+    build: sweetShop },
 ];
