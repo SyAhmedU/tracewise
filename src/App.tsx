@@ -82,7 +82,7 @@ export default function App() {
           />
         )}
         {mode === 'wizard' && wf && (
-          <Wizard wf={wf} update={update} stage={stage} setStage={setStage} onSaveExit={saveExit} exampleRead={exampleRead} />
+          <Wizard wf={wf} update={update} stage={stage} setStage={setStage} onSaveExit={saveExit} exampleRead={exampleRead} singlePage={!!exampleRead} />
         )}
       </main>
     </div>
