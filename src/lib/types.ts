@@ -72,6 +72,9 @@ export interface Handoff {
   who: string;
   what: string;                // what is passed / waited for
   typicalDelay: string;        // free text, e.g. "usually a day"
+  // --- v3 ecosystem fields, both optional so single-role capture is unchanged ---
+  delayHours?: number;            // structured mirror of typicalDelay, for queue math
+  linkedWorkflowId?: string;      // set only when the user confirms `who` is a captured role
 }
 
 export interface Exception {
@@ -85,6 +88,7 @@ export interface Workflow {
   id: string;
   schemaVersion: number;
   role: string;            // the person's role (no real name needed)
+  headcount?: number;      // v3: how many people do this role (default 1). The lever for the 10-15x stress test.
   context: string;         // org / team / industry, optional free text
   outputName: string;      // the ONE recurring output being documented
   officialVersion: string; // work-as-imagined: the SOP/official process, if one exists (Hollnagel, 2014)
@@ -139,6 +143,7 @@ export function newWorkflow(): Workflow {
     id: uid('wf'),
     schemaVersion: SCHEMA_VERSION,
     role: '',
+    headcount: 1,
     context: '',
     outputName: '',
     officialVersion: '',

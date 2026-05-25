@@ -41,9 +41,23 @@ export default function HandoffsStage({ wf, update }: { wf: Workflow; update: (f
               <TextInput value={h.what} placeholder="The thing passed / awaited" onChange={(e) => change(h.id, (x) => { x.what = e.target.value; })} />
             </Field>
           </div>
-          <Field label="How long does that usually take?">
-            <TextInput value={h.typicalDelay} placeholder="e.g. “usually a day, sometimes a week”" onChange={(e) => change(h.id, (x) => { x.typicalDelay = e.target.value; })} />
-          </Field>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14 }}>
+            <Field label="How long does that usually take?">
+              <TextInput value={h.typicalDelay} placeholder="e.g. “usually a day, sometimes a week”" onChange={(e) => change(h.id, (x) => { x.typicalDelay = e.target.value; })} />
+            </Field>
+            <Field label="≈ hours (optional)">
+              <TextInput
+                type="number"
+                min={0}
+                value={h.delayHours ?? ''}
+                placeholder="e.g. 8"
+                onChange={(e) => change(h.id, (x) => {
+                  const n = parseFloat(e.target.value);
+                  x.delayHours = e.target.value === '' || !Number.isFinite(n) ? undefined : Math.max(0, n);
+                })}
+              />
+            </Field>
+          </div>
         </div>
       ))}
 

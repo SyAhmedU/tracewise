@@ -20,6 +20,22 @@ export default function FrameStage({ wf, update }: { wf: Workflow; update: (fn: 
         />
       </Field>
 
+      <Field
+        label="How many people do this role? (optional)"
+        hint="Just this role — how many of you do this same job. Defaults to 1. We use it later to stress-test what breaks first if the work has to scale up."
+      >
+        <TextInput
+          type="number"
+          min={1}
+          value={wf.headcount ?? 1}
+          style={{ maxWidth: 140 }}
+          onChange={(e) => update((d) => {
+            const n = parseInt(e.target.value, 10);
+            d.headcount = Number.isFinite(n) && n > 0 ? n : 1;
+          })}
+        />
+      </Field>
+
       <Field label="Where does this happen? (optional)" hint="Team, department, or industry — gives the map some context. Skip if you like.">
         <TextArea
           value={wf.context}

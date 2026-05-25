@@ -4,7 +4,7 @@ import { SECTORS, type WorkedExample } from '../lib/examples';
 import { Button } from '../ui';
 
 export default function Landing({
-  workflows, onNew, onOpen, onDelete, resumeAvailable, onResume, onLoadExample,
+  workflows, onNew, onOpen, onDelete, resumeAvailable, onResume, onLoadExample, onEcosystem,
 }: {
   workflows: Workflow[];
   onNew: () => void;
@@ -13,6 +13,7 @@ export default function Landing({
   resumeAvailable: boolean;
   onResume: () => void;
   onLoadExample: (ex: WorkedExample) => void;
+  onEcosystem: () => void;
 }) {
   // 'all' or a sector id. Default to the first sector so the page shows real
   // cards immediately while loading only ONE chunk, not the whole library.
@@ -180,6 +181,31 @@ export default function Landing({
           </div>
         )}
       </div>
+
+      {/* ecosystem entry — only meaningful once 2+ roles are mapped */}
+      {workflows.length >= 2 && (
+        <button
+          onClick={onEcosystem}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left',
+            cursor: 'pointer', font: 'inherit', marginBottom: 28,
+            background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', borderRadius: 14,
+            padding: '16px 18px',
+          }}
+        >
+          <span style={{ fontSize: '1.6rem' }}>🕸️</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, color: 'var(--text-h)', marginBottom: 2 }}>
+              See the ecosystem &amp; stress-test it
+            </div>
+            <div style={{ fontSize: '.84rem', color: 'var(--text-soft)', lineHeight: 1.5 }}>
+              Stitch your {workflows.length} captured roles into one map and ask the real question: if the work had to
+              grow 10–15× in 18 months, what breaks first?
+            </div>
+          </div>
+          <span style={{ color: 'var(--accent)', fontWeight: 700 }}>→</span>
+        </button>
+      )}
 
       {/* saved */}
       {workflows.length > 0 && (

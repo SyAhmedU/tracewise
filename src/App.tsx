@@ -2,14 +2,15 @@ import { useEffect, useState } from 'react';
 import { type Workflow, newWorkflow } from './lib/types';
 import {
   listWorkflows, saveWorkflow, deleteWorkflow, getWorkflow,
-  loadAutosave, writeAutosave, clearAutosave,
+  loadAutosave, writeAutosave, clearAutosave, linkHandoff,
 } from './lib/store';
 import type { WorkedExample } from './lib/examples';
 import SyedBar from './components/SyedBar';
 import Landing from './components/Landing';
 import Wizard from './components/Wizard';
+import Ecosystem from './components/Ecosystem';
 
-type Mode = 'home' | 'wizard';
+type Mode = 'home' | 'wizard' | 'ecosystem';
 
 /** The example-level interpretation that travels with a loaded worked example —
  * shown in the Automation-Fit stage next to the engine's computed scores so the
@@ -63,6 +64,12 @@ export default function App() {
     setWorkflows(listWorkflows());
   };
 
+  const openEcosystem = () => { setMode('ecosystem'); window.scrollTo(0, 0); };
+  const confirmLink = (workflowId: string, handoffId: string, targetId: string | null) => {
+    linkHandoff(workflowId, handoffId, targetId);
+    setWorkflows(listWorkflows());
+  };
+
   return (
     <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column' }}>
       <SyedBar projectName="Tracewise — map the work you actually do" />
@@ -76,10 +83,19 @@ export default function App() {
             resumeAvailable={!!resume}
             onResume={doResume}
             onLoadExample={loadExample}
+            onEcosystem={openEcosystem}
           />
         )}
         {mode === 'wizard' && wf && (
           <Wizard wf={wf} update={update} stage={stage} setStage={setStage} onSaveExit={saveExit} exampleRead={exampleRead} singlePage={!!exampleRead} />
+        )}
+        {mode === 'ecosystem' && (
+          <Ecosystem
+            workflows={workflows}
+            onBack={() => { setMode('home'); window.scrollTo(0, 0); }}
+            onLink={confirmLink}
+            onOpen={open}
+          />
         )}
       </main>
     </div>

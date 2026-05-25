@@ -8,6 +8,7 @@ import { type Workflow, type Step, SCHEMA_VERSION } from './types';
 function normalize(w: Workflow): Workflow {
   return {
     ...w,
+    headcount: typeof w.headcount === 'number' && w.headcount > 0 ? w.headcount : 1,
     officialVersion: w.officialVersion ?? '',
     instanceAnchor: w.instanceAnchor ?? '',
     steps: (w.steps ?? []).map((s: Step) => {
@@ -81,6 +82,21 @@ export function deleteWorkflow(id: string): void {
 export function getWorkflow(id: string): Workflow | null {
   const w = read<Workflow[]>(SAVED_KEY, []).find((x) => x.id === id);
   return w ? normalize(w) : null;
+}
+
+// v3: confirm (or clear, with targetId = null) that a handoff's free-text `who`
+// is a captured role — the suggest-and-confirm link that turns the pile of
+// per-role captures into a connected ecosystem graph.
+export function linkHandoff(workflowId: string, handoffId: string, targetId: string | null): void {
+  const all = read<Workflow[]>(SAVED_KEY, []);
+  const wf = all.find((w) => w.id === workflowId);
+  if (!wf) return;
+  const h = (wf.handoffs ?? []).find((x) => x.id === handoffId);
+  if (!h) return;
+  if (targetId) h.linkedWorkflowId = targetId;
+  else delete h.linkedWorkflowId;
+  wf.updatedAt = Date.now();
+  write(SAVED_KEY, all);
 }
 
 // ---- autosave (in-progress capture) ----
