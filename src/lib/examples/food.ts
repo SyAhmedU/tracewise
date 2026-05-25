@@ -1,6 +1,110 @@
 // FOOD PREP — street food vendor, dosa cart, sweet shop
 import { S, mk, type WorkedExample } from './_shared';
 
+const messCook = () => mk({
+  role: 'Military-hotel / mess cook-owner (TN non-veg mess)',
+  context: 'A small "military hotel" doing biryani, parotta, kari dosai, fish; lunch peak; limited day-stock cooked fresh, sells out by design',
+  outputName: 'a day\'s mess meals cooked + sold out',
+  officialVersion: 'Plan the day\'s dishes → buy meat + veg → cook in batches → sell through lunch + dinner → close when sold out.',
+  instanceAnchor: 'a Sunday lunch rush, the biggest day of the week',
+  trigger: 'Open the mess; first lunch crowd builds by 12',
+  steps: [
+    S(1, { action: 'Decide the day\'s quantity per dish from the day + weather + feel', tool: 'Experience', isShadow: true, frequency: 'daily', needsJudgment: true, notes: 'How much mutton vs chicken vs fish to cook is a daily gamble — cook short and lose sales, cook over and waste perishable meat.' }),
+    S(2, { action: 'Buy fresh meat + vegetables in the morning', tool: 'Market', timeMins: 60, frequency: 'daily', frictionTags: ['movement', 'chasing'] }),
+    S(3, { action: 'Cook gravies + biryani in big batches; hold quality across the batch', tool: 'Cauldrons + dum', timeMins: 180, frequency: 'daily', needsJudgment: true }),
+    S(4, { action: 'Judge spice + salt by taste for the whole vessel', tool: 'Palate', frequency: 'daily', needsJudgment: true }),
+    S(5, { action: 'Serve the lunch rush — plate, parcel, manage the crowd', tool: 'Counter + helpers', outputDestination: 'A client / customer', frequency: 'many-times-a-day', frictionTags: ['wait'], isPainful: true, notes: 'The 1–2 PM crush — orders, parcels + dine-in at once with limited hands — is the daily pressure spike.' }),
+    S(6, { action: 'Take cash / UPI; keep a loose count of plates sold', tool: 'Cash + UPI', frequency: 'many-times-a-day' }),
+    S(7, { action: 'Track what sold out first + leftover, to tune tomorrow\'s quantity', tool: 'Memory + notebook', inputSource: 'My own notes', frequency: 'daily', isShadow: true }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Meat + fish supplier', what: 'fresh morning stock', typicalDelay: 'daily morning' },
+    { direction: 'wait-on', who: 'Parotta master', what: 'parotta supply at peak', typicalDelay: 'continuous at lunch' },
+  ],
+  exceptions: [
+    { trigger: 'A dish sells out at peak', whatYouDo: 'Push the alternatives, promise it tomorrow, lose some customers', howOften: 'most days' },
+    { trigger: 'Slow day, cooked too much', whatYouDo: 'Discount evening, parcel for staff, absorb the meat loss', howOften: 'weekly' },
+  ],
+});
+
+const muttonButcher = () => mk({
+  role: 'Mutton-stall butcher (retail meat)',
+  context: 'A roadside mutton / chicken stall; live + fresh-cut; festival + Sunday peaks; whole-carcass economics',
+  outputName: 'a customer\'s meat cut, weighed + sold',
+  officialVersion: 'Buy carcass / birds → display → cut to customer ask → weigh → price → take payment.',
+  instanceAnchor: 'a Sunday morning queue with everyone wanting the good cuts',
+  trigger: 'Customer asks for a quantity + cut',
+  steps: [
+    S(1, { action: 'Buy the day\'s carcass / live birds; judge quality + price', tool: 'Supplier', inputSource: 'Another team', timeMins: 30, frequency: 'daily', needsJudgment: true }),
+    S(2, { action: 'Cut to the customer\'s ask — curry cut, boneless, liver, with/without fat', tool: 'Cleaver + block', frequency: 'many-times-a-day', needsJudgment: true, notes: 'Each customer wants specific bone/meat/fat ratio — reading + cutting to it is the craft + the loyalty.' }),
+    S(3, { action: 'Balance whole-carcass sale so prime + less-wanted cuts both move', tool: 'Mental balancing', isShadow: true, frequency: 'many-times-a-day', needsJudgment: true, isPainful: true, notes: 'Everyone wants the prime cut; getting the whole carcass sold (bones, fat, offal too) before it spoils is the daily margin worry.' }),
+    S(4, { action: 'Weigh, price per kg, adjust for the cut', tool: 'Scale', frequency: 'many-times-a-day', frictionTags: ['wait'] }),
+    S(5, { action: 'Take cash / UPI; mark regulars\' occasional credit', tool: 'Cash + UPI', frequency: 'many-times-a-day', isShadow: true }),
+    S(6, { action: 'Manage the queue + freshness through the day', tool: 'Display + ice', frequency: 'many-times-a-day', frictionTags: ['chasing', 'movement'] }),
+    S(7, { action: 'End-of-day: clear remaining stock, tally, plan tomorrow\'s buy', tool: 'Memory + cash', inputSource: 'My own notes', frequency: 'daily', frictionTags: ['manual-transfer'] }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Carcass / livestock supplier', what: 'fresh stock + price', typicalDelay: 'daily dawn' },
+    { direction: 'hand-to', who: 'Restaurants / mess (bulk)', what: 'standing bulk orders', typicalDelay: 'morning' },
+  ],
+  exceptions: [
+    { trigger: 'Only prime cuts wanted, bones pile up', whatYouDo: 'Bundle bones cheap, sell to mess / dog-feed buyers, protect margin', howOften: 'daily' },
+    { trigger: 'Festival demand spike', whatYouDo: 'Buy extra, pre-take orders, manage a long queue + price rise', howOften: 'festivals' },
+  ],
+});
+
+const biryaniShop = () => mk({
+  role: 'Biryani shop owner (dum + parcel + online)',
+  context: 'A specialist biryani shop; dine-in + heavy parcel + Swiggy/Zomato; sells by the "pot" — finite dum batches per day',
+  outputName: 'a biryani order served / parcelled',
+  officialVersion: 'Prep + layer → dum-cook pots → take orders (counter / parcel / app) → serve from the pot → settle → cook next pot.',
+  instanceAnchor: 'a weekend dinner when a pot runs low with orders still coming',
+  trigger: 'Orders arrive across counter, phone + apps',
+  steps: [
+    S(1, { action: 'Marinate + layer; set dum pots on a timed schedule', tool: 'Pots + dum', timeMins: 90, frequency: 'daily', needsJudgment: true }),
+    S(2, { action: 'Judge how many pots to cook for the day\'s expected demand', tool: 'Experience', isShadow: true, frequency: 'daily', needsJudgment: true, notes: 'Biryani can\'t be made instantly — guessing the day\'s pots right is the core call; a sold-out pot means turning away money.' }),
+    S(3, { action: 'Take orders across counter, phone + app tablets', tool: 'Counter + phone + tablets', inputSource: 'A system / report', frequency: 'many-times-a-day', frictionTags: ['lookup'], notes: 'Three order streams drawing from the same finite pot — I allocate in my head who gets served from what\'s left.' }),
+    S(4, { action: 'Serve to order — portion rice + meat fairly from the pot', tool: 'Ladle + plate', outputDestination: 'A client / customer', frequency: 'many-times-a-day', needsJudgment: true }),
+    S(5, { action: 'Manage the pot-running-low moment against pending orders', tool: 'Judgment', frequency: 'daily', needsJudgment: true, isPainful: true, notes: 'When a pot empties with parcels + app orders queued, deciding who waits for the next pot vs who to refund is the stress point.' }),
+    S(6, { action: 'Pack parcels, hand app orders to riders', tool: 'Boxes', outputDestination: 'Delivery rider', frequency: 'many-times-a-day', frictionTags: ['wait', 'chasing'] }),
+    S(7, { action: 'Settle payments; note pots sold + sell-out time to tune tomorrow', tool: 'UPI + notebook', inputSource: 'My own notes', frequency: 'daily', frictionTags: ['manual-transfer'] }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Aggregator riders', what: 'parcel pickup', typicalDelay: 'minutes' },
+    { direction: 'wait-on', who: 'Meat + rice supplier', what: 'daily fresh stock', typicalDelay: 'morning' },
+  ],
+  exceptions: [
+    { trigger: 'Pot sells out with orders pending', whatYouDo: 'Pause app, give next-pot ETA, refund app orders that can\'t wait', howOften: 'weekends' },
+    { trigger: 'App order spike vs counter queue', whatYouDo: 'Throttle app, protect dine-in + standing parcel customers', howOften: 'daily' },
+  ],
+});
+
+const jigarthandaStall = () => mk({
+  role: 'Juice / jigarthanda stall operator',
+  context: 'A cold-drinks + fresh-juice + jigarthanda stall near a college / market; summer + evening peaks; perishable fruit + milk',
+  outputName: 'a fresh juice / jigarthanda served',
+  officialVersion: 'Prep fruit + base → take order → blend / assemble → serve → take payment → manage stock + ice.',
+  instanceAnchor: 'a hot summer evening rush',
+  trigger: 'Customers gather in the evening heat',
+  steps: [
+    S(1, { action: 'Prep — cut fruit, make jigarthanda base, set syrups + ice', tool: 'Knives + jars', timeMins: 40, frequency: 'daily', frictionTags: ['movement'] }),
+    S(2, { action: 'Take order — juice type, sugar level, ice, add-ons', tool: 'Voice', inputSource: 'A client / customer', frequency: 'many-times-a-day', needsJudgment: true }),
+    S(3, { action: 'Blend / assemble to taste; judge ripeness + sweetness balance', tool: 'Mixer + hands', frequency: 'many-times-a-day', needsJudgment: true, notes: 'Adjusting sugar to the fruit\'s natural ripeness so it tastes right — a per-batch palate call.' }),
+    S(4, { action: 'Serve + take cash / UPI', tool: 'Glass + UPI', outputDestination: 'A client / customer', frequency: 'many-times-a-day', frictionTags: ['wait'] }),
+    S(5, { action: 'Judge how much perishable fruit to stock vs spoilage', tool: 'Experience', isShadow: true, frequency: 'daily', needsJudgment: true, isPainful: true, notes: 'Cut fruit + milk spoil fast in the heat; stocking to demand without same-day waste is the constant perishable gamble.' }),
+    S(6, { action: 'Keep ice + cold stock going through the peak', tool: 'Ice box', frequency: 'many-times-a-day', frictionTags: ['movement', 'chasing'] }),
+    S(7, { action: 'Wind up — clean, discard spoilables, tally, plan tomorrow\'s fruit', tool: 'Cloth + notebook', inputSource: 'My own notes', frequency: 'daily', frictionTags: ['manual-transfer'] }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Fruit + milk supplier', what: 'fresh daily stock', typicalDelay: 'morning' },
+    { direction: 'wait-on', who: 'Ice supplier', what: 'ice through the day', typicalDelay: 'as needed' },
+  ],
+  exceptions: [
+    { trigger: 'Sudden rain kills the evening crowd', whatYouDo: 'Cut losses, refrigerate what keeps, discard cut fruit', howOften: 'monsoon' },
+    { trigger: 'Power cut stops the mixer / fridge', whatYouDo: 'Switch to non-blended items, ice down stock, wait it out', howOften: 'summer' },
+  ],
+});
+
 const chaiKadai = () => mk({
   role: 'Tea-shop owner (roadside chai kadai)',
   context: 'A roadside tea + snacks shop near a bus stand; opens 5 AM; bus crowd + daily regulars, many on credit',
@@ -286,4 +390,24 @@ export const FOOD: WorkedExample[] = [
     behavioralContext: 'The trace pins the single painful step at packing, not billing — and tags eye-based replenishment as a shadow step because the POS lags reality at festival peak. The staff\'s eye beats the system here, so asking them to update stock mid-rush would only widen the lag.',
     fieldSpecificFit: 'Aim at the step the capture marked painful: a festival-mode packing station (pre-folded boxes, a parallel packer) and a kitchen-facing live-stock screen fed by counter weigh-outs, retiring the eye-based guess without making the counter type. The bill flow the trace shows as smooth is left alone.',
     build: sweetShop },
+  { key: 'mess-cook', label: 'A military-hotel cook-owner on Sunday lunch', domain: 'Food prep', region: 'Tamil Nadu', emoji: '🍛',
+    summary: 'A small non-veg mess cooking a finite day-batch of biryani + gravies — sells out by design, where today\'s quantity is yesterday\'s gamble.',
+    behavioralContext: 'The capture tags the morning quantity-call as both shadow and judgment, and pins the painful step at the 1–2 PM crush. How much mutton vs chicken vs fish to cook is a decades-old read of weather, day-of-week and regulars — a system that flattens that into an "average" would lose the customers who came for the dish that\'s sold out.',
+    fieldSpecificFit: 'Leave the cauldron, the palate call and the rush alone — those judgment tags are the mess itself. The trace only justifies a planning aid: a simple end-of-day log of sold-out times + leftovers per dish that turns the morning gamble into a checkable pattern, and a parcel-counter helper to take pressure off the peak. The cook keeps the override.',
+    build: messCook },
+  { key: 'mutton-butcher', label: 'A mutton-stall butcher on a Sunday queue', domain: 'Food prep', region: 'Tamil Nadu', emoji: '🥩',
+    summary: 'A roadside meat stall balancing whole-carcass economics against a queue that all wants the prime cut — the worry is what doesn\'t sell, not what does.',
+    behavioralContext: 'The trace marks the cut-to-ask as a judgment step (every customer\'s bone/meat/fat ratio is the loyalty) and pins the painful step at whole-carcass balancing — selling the bones, fat and offal before they spoil. A system that just tracks SKUs would miss that the daily margin lives in moving the unwanted cuts.',
+    fieldSpecificFit: 'The cleaver and the regulars\' preferences stay analog — those are the craft. The capture aims the tool at the seams the friction tags name: a standing-bulk-order list for the mess + restaurant pickups, a simple weight-vs-price tally to spot the daily carcass-yield gap, and a kadan note for regulars\' running credit. The cut itself is left alone.',
+    build: muttonButcher },
+  { key: 'biryani-shop', label: 'A biryani shop with a pot running low at peak', domain: 'Food prep', region: 'Tamil Nadu', emoji: '🍚',
+    summary: 'A dum-pot shop allocating finite biryani across counter, parcel and three aggregator apps — the stress is who waits, not how to cook.',
+    behavioralContext: 'The capture tags the three-stream order-merging as a shadow step (counter + phone + tablets all draw from the same pot in the owner\'s head) and the pot-running-low moment as the single painful one — refunds vs dine-in goodwill vs app ratings, all judged on the fly. A naive queue-merger would refund the wrong customer.',
+    fieldSpecificFit: 'Do not touch the dum or the portioning judgment. Aim at the seam the trace names painful: one unified ticket-board that shows live pot-stock vs all three channels at once, with a pause-this-app button so the owner can protect dine-in or standing parcels deliberately. The "how many pots today" call stays the owner\'s daily read.',
+    build: biryaniShop },
+  { key: 'jigarthanda-stall', label: 'A jigarthanda + juice stall on a hot evening', domain: 'Food prep', region: 'Tamil Nadu', emoji: '🥤',
+    summary: 'A cold-drinks cart racing perishable fruit + milk against the evening heat — the worry is spoilage, not service.',
+    behavioralContext: 'The trace tags the sugar-to-ripeness call as a per-batch judgment step and pins the painful one at perishable stocking — cut fruit and milk spoil within hours in summer. A rigid stocking app working off averages would either run dry by 7 PM or compost half the morning prep.',
+    fieldSpecificFit: 'The blend, the palate and the heat itself stay with the operator. The capture only points to a small spoilage-log nudge: a weekly tally of fruit bought vs sold vs discarded that turns the daily gamble into a visible pattern, plus a weather-aware morning-buy hint for monsoon evenings flagged in the exceptions. The cart stays as it is.',
+    build: jigarthandaStall },
 ];
