@@ -1,11 +1,23 @@
 import { describe, it, expect } from 'vitest';
-import { WORKED_EXAMPLES } from './examples';
+import { ALL_EXAMPLES as WORKED_EXAMPLES } from './examples/_all';
+import { SECTORS } from './examples';
 import { analyzeWorkflow, ARCHETYPES } from './automation';
 
 describe('worked-example library', () => {
   it('has unique keys', () => {
     const keys = WORKED_EXAMPLES.map((e) => e.key);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('every example belongs to a registered sector domain (chips stay in sync)', () => {
+    const sectorDomains = new Set(SECTORS.map((s) => s.domain));
+    for (const ex of WORKED_EXAMPLES) {
+      expect(sectorDomains.has(ex.domain), `${ex.key} has domain "${ex.domain}" with no matching sector`).toBe(true);
+    }
+    // and every registered sector actually has at least one example
+    for (const s of SECTORS) {
+      expect(WORKED_EXAMPLES.some((e) => e.domain === s.domain), `sector "${s.id}" has no examples`).toBe(true);
+    }
   });
 
   it('every example builds a workflow with at least one step and both read fields', () => {
