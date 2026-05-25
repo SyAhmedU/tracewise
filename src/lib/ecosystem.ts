@@ -79,7 +79,7 @@ export interface LinkSuggestion {
 
 export type FindingSeverity = 'info' | 'warn' | 'risk';
 export interface Finding {
-  kind: 'shadow-cluster' | 'judgment-gate' | 'single-point' | 'cycle' | 'overloaded-now';
+  kind: 'shadow-cluster' | 'judgment-gate' | 'single-point' | 'overloaded-now';
   title: string;
   detail: string;
   severity: FindingSeverity;
@@ -192,7 +192,7 @@ export function buildEcosystem(workflows: Workflow[]): Ecosystem {
   // classify each role's constraint character (drives colour + label)
   for (const n of nodes) n.constraint = classify(n);
 
-  const findings = buildFindings(workflows, nodes, edges);
+  const findings = buildFindings(workflows, nodes);
 
   return { nodes, edges, blindSpots, suggestions, findings };
 }
@@ -231,7 +231,7 @@ export function breaksFirst(nodes: RoleNode[]): RoleNode[] {
 
 // ---- findings: properties visible only across captures ----
 
-function buildFindings(workflows: Workflow[], nodes: RoleNode[], edges: Edge[]): Finding[] {
+function buildFindings(workflows: Workflow[], nodes: RoleNode[]): Finding[] {
   const out: Finding[] = [];
 
   // 1. shadow-tool clusters — the same unofficial tool propping up multiple roles
@@ -288,55 +288,134 @@ function buildFindings(workflows: Workflow[], nodes: RoleNode[], edges: Edge[]):
     }
   }
 
-  // 5. cross-role cycles — a rework loop that spans roles
-  const cycle = findCycle(nodes, edges);
-  if (cycle) {
-    const names = cycle.map((id) => nodes.find((n) => n.id === id)?.role ?? id);
-    out.push({
-      kind: 'cycle', severity: 'warn',
-      title: `Work loops between ${cycle.length} roles`,
-      detail: `${names.join(' → ')} → ${names[0]}. Work circles back instead of flowing forward — a rework loop that gets more expensive as volume grows.`,
-    });
-  }
+  // Cross-role loops are handled by the dynamic reinforcing-loop layer below
+  // (analyzeLoops), because whether a loop is *vicious* depends on the load.
 
   // risk first, then warn, then info
   const rank: Record<FindingSeverity, number> = { risk: 0, warn: 1, info: 2 };
   return out.sort((a, b) => rank[a.severity] - rank[b.severity]);
 }
 
-/** First directed cycle in the confirmed-edge graph, as a list of node ids, or null. */
-function findCycle(nodes: RoleNode[], edges: Edge[]): string[] | null {
+// ---- reinforcing-loop layer (the "why it breaks" on top of "what breaks") ----
+//
+// The stress test says WHICH roles break first. It does not explain why the
+// break is non-linear. The usual cause is a reinforcing loop: a saturated role
+// falls behind → downstream roles wait → they chase → chasing lands more load
+// back on the saturated role → it falls further behind. This layer signs the
+// edges Tracewise already has — purely from saturation, never authored — and
+// flags the directed cycles that are back-pressured at the current load. It is
+// load-dependent, so it lives outside buildEcosystem and recomputes per slider
+// tick, the same way roleStateAt does.
+
+export type EdgeSign = 'reinforcing' | 'relieving' | 'neutral';
+export const EDGE_SIGN_COLOR: Record<EdgeSign, string> = {
+  reinforcing: '#c0392b', // feeds an already-stressed role — back-pressure
+  relieving: '#1b8a5a',   // flows into a role with room — work passes through
+  neutral: '#9aa0a6',     // target carries no captured load
+};
+
+/** Sign of an edge at a given load: red if it feeds a saturated/near role. */
+export function edgeSignAt(edge: Edge, nodeById: Map<string, RoleNode>, multiplier: number): EdgeSign {
+  const target = nodeById.get(edge.toId);
+  if (!target || target.demandWeeklyMin <= 0) return 'neutral';
+  const st = roleStateAt(target, multiplier);
+  return st === 'ok' ? 'relieving' : 'reinforcing';
+}
+
+export interface LoopAnalysis {
+  roleIds: string[];        // cycle node ids, in loop order
+  roleNames: string[];
+  edges: Edge[];            // the edges composing the loop
+  reinforcing: boolean;     // vicious at this load (most of the loop is back-pressured)
+  saturatedCount: number;   // roles in the loop at/near saturation
+  totalDelayHours: number;  // captured delay circulating in the loop
+  leverageEdge: Edge | null;// the single best edge to cut
+  leverageRationale: string;
+}
+
+/** Classify every directed cycle in the confirmed-edge graph at a given load. */
+export function analyzeLoops(eco: Ecosystem, multiplier: number): LoopAnalysis[] {
+  const nodeById = new Map(eco.nodes.map((n) => [n.id, n]));
+  const cycles = findAllCycles(eco.nodes, eco.edges);
+  const out: LoopAnalysis[] = [];
+
+  for (const cyc of cycles) {
+    const edges: Edge[] = [];
+    for (let i = 0; i < cyc.length; i++) {
+      const a = cyc[i], b = cyc[(i + 1) % cyc.length];
+      const e = eco.edges.find((x) => x.fromId === a && x.toId === b);
+      if (e) edges.push(e);
+    }
+    if (edges.length < cyc.length) continue; // safety: incomplete loop
+
+    const roles = cyc.map((id) => nodeById.get(id)!);
+    const saturatedCount = roles.filter((r) => roleStateAt(r, multiplier) !== 'ok').length;
+    const totalDelayHours = edges.reduce((s, e) => s + (e.delayHours ?? 0), 0);
+    // vicious when a majority of the loop is back-pressured (and at least one is)
+    const reinforcing = saturatedCount >= 1 && saturatedCount >= Math.ceil(cyc.length / 2);
+
+    let leverageEdge: Edge | null = null;
+    let leverageRationale = '';
+    if (reinforcing) {
+      // prefer cutting intake to the loop role with the most automatable slack
+      let bestRelief = -1;
+      for (const e of edges) {
+        const t = nodeById.get(e.toId)!;
+        if (t.reliefHeadroom > bestRelief) { bestRelief = t.reliefHeadroom; leverageEdge = e; }
+      }
+      if (leverageEdge && bestRelief >= 0.25) {
+        const t = nodeById.get(leverageEdge.toId)!;
+        const f = nodeById.get(leverageEdge.fromId)!;
+        leverageRationale = `Cut ${f.role} → ${t.role}: ${t.role} has ~${Math.round(bestRelief * 100)}% automatable slack, so relieving its intake (auto-route or validate “${leverageEdge.what || 'the handoff'}”) breaks the loop with the least pain.`;
+      } else {
+        // no slack anywhere — decouple the highest-delay link with a buffer
+        leverageEdge = edges.reduce((m, e) => ((e.delayHours ?? 0) > (m.delayHours ?? -1) ? e : m), edges[0]);
+        const t = nodeById.get(leverageEdge.toId)!;
+        const f = nodeById.get(leverageEdge.fromId)!;
+        leverageRationale = `Cut ${f.role} → ${t.role}: no role in the loop has automation slack, so decouple here — a buffer/queue stops backlog circling the loop.`;
+      }
+    }
+
+    out.push({ roleIds: cyc, roleNames: roles.map((r) => r.role), edges, reinforcing, saturatedCount, totalDelayHours, leverageEdge, leverageRationale });
+  }
+
+  // vicious first, then by how much of the loop is saturated
+  return out.sort((a, b) => (Number(b.reinforcing) - Number(a.reinforcing)) || (b.saturatedCount - a.saturatedCount));
+}
+
+/** Every simple directed cycle in the confirmed-edge graph (bounded for safety). */
+function findAllCycles(nodes: RoleNode[], edges: Edge[], maxLen = 8, maxCycles = 40): string[][] {
   const adj = new Map<string, string[]>();
   for (const n of nodes) adj.set(n.id, []);
   for (const e of edges) adj.get(e.fromId)?.push(e.toId);
 
-  const WHITE = 0, GRAY = 1, BLACK = 2;
-  const color = new Map<string, number>(nodes.map((n) => [n.id, WHITE]));
-  const stack: string[] = [];
+  const cycles: string[][] = [];
+  const seen = new Set<string>();
+  const canon = (cyc: string[]): string => {
+    let min = 0;
+    for (let i = 1; i < cyc.length; i++) if (cyc[i] < cyc[min]) min = i;
+    return [...cyc.slice(min), ...cyc.slice(0, min)].join('>');
+  };
 
-  function dfs(u: string): string[] | null {
-    color.set(u, GRAY);
-    stack.push(u);
+  // Anchor each search at the loop's smallest id (v > start) so each cycle is
+  // found once; canon() dedupes any residual rotations.
+  function dfs(start: string, u: string, path: string[], onPath: Set<string>) {
+    if (cycles.length >= maxCycles || path.length > maxLen) return;
     for (const v of adj.get(u) ?? []) {
-      if (color.get(v) === GRAY) {
-        const i = stack.indexOf(v);
-        return stack.slice(i);
-      }
-      if (color.get(v) === WHITE) {
-        const found = dfs(v);
-        if (found) return found;
+      if (v === start && path.length >= 2) {
+        const key = canon(path);
+        if (!seen.has(key)) { seen.add(key); cycles.push([...path]); }
+      } else if (v > start && !onPath.has(v)) {
+        onPath.add(v); path.push(v);
+        dfs(start, v, path, onPath);
+        path.pop(); onPath.delete(v);
       }
     }
-    stack.pop();
-    color.set(u, BLACK);
-    return null;
   }
 
   for (const n of nodes) {
-    if (color.get(n.id) === WHITE) {
-      const found = dfs(n.id);
-      if (found) return found;
-    }
+    if (cycles.length >= maxCycles) break;
+    dfs(n.id, n.id, [n.id], new Set([n.id]));
   }
-  return null;
+  return cycles;
 }

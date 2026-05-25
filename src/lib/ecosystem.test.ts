@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { type Workflow, type Frequency, type FrictionTag, type HandoffDirection, newWorkflow, newStep, newHandoff } from './types';
-import { buildEcosystem, breaksFirst, roleStateAt, USABLE_MIN_PER_WEEK } from './ecosystem';
+import { buildEcosystem, breaksFirst, roleStateAt, analyzeLoops, edgeSignAt, USABLE_MIN_PER_WEEK } from './ecosystem';
 
 // --- tiny builder so each test reads as a scenario, not setup noise ---
 interface StepSpec { mins: number; freq: Frequency; tags?: FrictionTag[]; judgment?: boolean; shadow?: boolean; tool?: string }
@@ -139,13 +139,6 @@ describe('ecosystem — cross-capture findings', () => {
     expect(eco.findings.some((f) => f.kind === 'shadow-cluster')).toBe(true);
   });
 
-  it('flags a cross-role rework loop (cycle)', () => {
-    const a = role('a', 'A', { handoffs: [{ direction: 'hand-to', who: 'b', link: 'b' }] });
-    const b = role('b', 'B', { handoffs: [{ direction: 'hand-to', who: 'a', link: 'a' }] });
-    const eco = buildEcosystem([a, b]);
-    expect(eco.findings.some((f) => f.kind === 'cycle')).toBe(true);
-  });
-
   it('flags a role already over capacity at 1×', () => {
     const drowning = role('d', 'Drowning', { headcount: 1, steps: [{ mins: 120, freq: 'many-times-a-day' }] }); // 120×25 = 3000/wk
     const eco = buildEcosystem([drowning]);
@@ -162,5 +155,56 @@ describe('ecosystem — optionality classification', () => {
   it('a judgment-dominated role is judgment-bound, not a quick win', () => {
     const wf = role('a', 'Judge', { headcount: 2, steps: [{ mins: 60, freq: 'daily', judgment: true }] });
     expect(buildEcosystem([wf]).nodes[0].constraint).toBe('judgment-bound');
+  });
+});
+
+describe('ecosystem — reinforcing loops', () => {
+  // two roles that hand to each other = a directed cycle; each 120×5 = 600/wk → breaksAt 3
+  const a = role('a', 'A', { steps: [{ mins: 120, freq: 'daily' }], handoffs: [{ direction: 'hand-to', who: 'b', link: 'b' }] });
+  const b = role('b', 'B', { steps: [{ mins: 120, freq: 'daily' }], handoffs: [{ direction: 'hand-to', who: 'a', link: 'a' }] });
+  const eco = buildEcosystem([a, b]);
+
+  it('detects the directed cycle', () => {
+    const loops = analyzeLoops(eco, 1);
+    expect(loops).toHaveLength(1);
+    expect([...loops[0].roleIds].sort()).toEqual(['a', 'b']);
+  });
+
+  it('is not vicious at low load, but reinforcing once the loop saturates', () => {
+    expect(analyzeLoops(eco, 1).some((l) => l.reinforcing)).toBe(false);
+    expect(analyzeLoops(eco, 3).some((l) => l.reinforcing)).toBe(true);
+  });
+
+  it('names a leverage edge to cut when the loop is vicious', () => {
+    const vicious = analyzeLoops(eco, 5).find((l) => l.reinforcing)!;
+    expect(vicious.leverageEdge).not.toBeNull();
+    expect(vicious.leverageRationale).toMatch(/^Cut /);
+  });
+
+  it('a loop of idle roles is never vicious', () => {
+    const x = role('x', 'X', { handoffs: [{ direction: 'hand-to', who: 'y', link: 'y' }] });
+    const y = role('y', 'Y', { handoffs: [{ direction: 'hand-to', who: 'x', link: 'x' }] });
+    expect(analyzeLoops(buildEcosystem([x, y]), 15).some((l) => l.reinforcing)).toBe(false);
+  });
+});
+
+describe('ecosystem — edge signs track saturation', () => {
+  const a = role('a', 'A', { steps: [{ mins: 120, freq: 'daily' }], handoffs: [{ direction: 'hand-to', who: 'b', link: 'b' }] });
+  const b = role('b', 'B', { steps: [{ mins: 120, freq: 'daily' }] }); // breaksAt 3
+  const eco = buildEcosystem([a, b]);
+  const nodeById = new Map(eco.nodes.map((n) => [n.id, n]));
+  const edge = eco.edges[0]; // a → b
+
+  it('is relieving while the target holds, reinforcing once it saturates', () => {
+    expect(edgeSignAt(edge, nodeById, 1)).toBe('relieving');
+    expect(edgeSignAt(edge, nodeById, 3)).toBe('reinforcing');
+  });
+
+  it('is neutral when the target carries no load', () => {
+    const c = role('c', 'C', {});
+    const d = role('d', 'D', { handoffs: [{ direction: 'hand-to', who: 'c', link: 'c' }] });
+    const e2 = buildEcosystem([c, d]);
+    const nb = new Map(e2.nodes.map((n) => [n.id, n]));
+    expect(edgeSignAt(e2.edges[0], nb, 10)).toBe('neutral');
   });
 });

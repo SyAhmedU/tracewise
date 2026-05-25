@@ -6,7 +6,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Workflow } from '../lib/types';
 import {
   buildEcosystem, breaksFirst, roleStateAt, STATE_COLOR,
-  CONSTRAINT_LABEL, type RoleNode, type FindingSeverity,
+  CONSTRAINT_LABEL, analyzeLoops, edgeSignAt, EDGE_SIGN_COLOR,
+  type RoleNode, type FindingSeverity, type EdgeSign,
 } from '../lib/ecosystem';
 import { Button, Card } from '../ui';
 
@@ -28,6 +29,21 @@ export default function Ecosystem({
   const eco = useMemo(() => buildEcosystem(workflows), [workflows]);
   const ranked = useMemo(() => breaksFirst(eco.nodes), [eco.nodes]);
   const maxDemand = useMemo(() => Math.max(1, ...eco.nodes.map((n) => n.demandWeeklyMin)), [eco.nodes]);
+  const nodeById = useMemo(() => new Map(eco.nodes.map((n) => [n.id, n])), [eco.nodes]);
+
+  // reinforcing-loop layer — recomputed live as the slider moves
+  const loops = useMemo(() => analyzeLoops(eco, mult), [eco, mult]);
+  const viciousLoops = useMemo(() => loops.filter((l) => l.reinforcing), [loops]);
+  const viciousEdgeIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const l of viciousLoops) for (const e of l.edges) s.add(e.handoffId);
+    return s;
+  }, [viciousLoops]);
+  const leverageEdgeIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const l of viciousLoops) if (l.leverageEdge) s.add(l.leverageEdge.handoffId);
+    return s;
+  }, [viciousLoops]);
 
   // ---- force-directed layout (pure React, no d3 — mirrors theoryscope's map) ----
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -137,15 +153,19 @@ export default function Ecosystem({
         }}>
           <svg ref={svgRef} viewBox={`${-W / 2} ${-H / 2} ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block', cursor: 'grab' }}>
             <defs>
-              <marker id="eco-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                <path d="M0,0 L10,5 L0,10 z" fill="var(--border-strong)" />
-              </marker>
+              {(Object.keys(EDGE_SIGN_COLOR) as EdgeSign[]).map((s) => (
+                <marker key={s} id={`eco-arrow-${s}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill={EDGE_SIGN_COLOR[s]} />
+                </marker>
+              ))}
             </defs>
             {eco.edges.map((e, i) => {
               const a = sim.find((n) => n.id === e.fromId);
               const b = sim.find((n) => n.id === e.toId);
               if (!a || !b) return null;
-              const hot = hovered === e.fromId || hovered === e.toId;
+              const sign = edgeSignAt(e, nodeById, mult);
+              const vicious = viciousEdgeIds.has(e.handoffId);
+              const lever = leverageEdgeIds.has(e.handoffId);
               // stop the arrow at the target node's edge so the head shows
               const dx = b.x - a.x, dy = b.y - a.y;
               const d = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -153,9 +173,11 @@ export default function Ecosystem({
               const ex = b.x - (dx / d) * (rb + 4), ey = b.y - (dy / d) * (rb + 4);
               return (
                 <line key={i} x1={a.x} y1={a.y} x2={ex} y2={ey}
-                  stroke={hot ? 'var(--accent)' : 'var(--border-strong)'}
-                  strokeWidth={hot ? 2 : 1.2} strokeOpacity={hot ? 0.9 : 0.5}
-                  markerEnd="url(#eco-arrow)" />
+                  stroke={EDGE_SIGN_COLOR[sign]}
+                  strokeWidth={vicious ? 2.6 : 1.3}
+                  strokeOpacity={vicious ? 0.95 : 0.5}
+                  strokeDasharray={lever ? '7 4' : undefined}
+                  markerEnd={`url(#eco-arrow-${sign})`} />
               );
             })}
             {sim.map((n) => {
@@ -189,6 +211,11 @@ export default function Ecosystem({
             <Legend color={STATE_COLOR.broken} label="Breaks" />
             <span>○ size = weekly burden · number = headcount · white ring = single point of failure</span>
           </div>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', padding: '0 12px 6px', fontSize: '.74rem', color: 'var(--text-soft)' }}>
+            <Legend color={EDGE_SIGN_COLOR.relieving} label="→ flows through (target has room)" />
+            <Legend color={EDGE_SIGN_COLOR.reinforcing} label="→ back-pressure (target stressed)" />
+            <span>thick = part of a vicious loop · dashed = the edge to cut</span>
+          </div>
         </div>
       )}
 
@@ -221,6 +248,44 @@ export default function Ecosystem({
           );
         })}
       </div>
+
+      {/* reinforcing loops — the "why" behind a non-linear break */}
+      {loops.length > 0 && (
+        <>
+          <h3 style={{ fontSize: '1.05rem', marginBottom: 4 }}>
+            Reinforcing loops {viciousLoops.length > 0 ? `at ${mult}×` : ''}
+          </h3>
+          <p style={{ fontSize: '.84rem', color: 'var(--text-soft)', marginBottom: 12, lineHeight: 1.5 }}>
+            {viciousLoops.length > 0
+              ? 'Why the break is non-linear: when a role in a loop saturates, the work it cannot clear backs up onto the others, which chase it, which loads it further. Cut one edge (dashed) and the whole loop slackens. Inferred from saturation + handoffs — directional, not a forecast.'
+              : 'These role loops are stable at this load — no role in them is saturated yet. Drag the load up and watch which one ignites first.'}
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 26 }}>
+            {loops.map((l, i) => {
+              const live = l.reinforcing;
+              return (
+                <div key={i} style={{
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderLeft: `3px solid ${live ? '#c0392b' : 'var(--border-strong)'}`,
+                  borderRadius: 12, padding: '12px 16px', boxShadow: 'var(--shadow)',
+                  opacity: live ? 1 : 0.7,
+                }}>
+                  <div style={{ fontWeight: 700, color: 'var(--text-h)', marginBottom: 3 }}>
+                    {live ? '🔁 Vicious loop' : '○ Latent loop'}: {l.roleNames.join(' → ')} → {l.roleNames[0]}
+                  </div>
+                  <div style={{ fontSize: '.84rem', color: 'var(--text-soft)', lineHeight: 1.5 }}>
+                    {l.saturatedCount}/{l.roleIds.length} roles stressed at {mult}×
+                    {l.totalDelayHours > 0 && <> · ≈{l.totalDelayHours}h of delay circulating</>}.
+                    {live && l.leverageRationale && (
+                      <> <strong style={{ color: 'var(--text-h)' }}>{l.leverageRationale}</strong></>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {/* findings */}
       {eco.findings.length > 0 && (
