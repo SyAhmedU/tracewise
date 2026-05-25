@@ -68,7 +68,7 @@ npm install
 npm run dev      # vite dev server (probes use the offline heuristic unless you run `vercel dev`)
 npm run build    # tsc -b && vite build
 npm run lint
-npm test         # vitest run — engine coherence invariants over all 39 examples
+npm test         # vitest run — engine coherence invariants over all 81 examples
 ```
 
 Set `GROQ_API_KEY` (see `.env.example`) and run via `vercel dev` to get

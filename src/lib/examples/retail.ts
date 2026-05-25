@@ -1,6 +1,85 @@
 // RETAIL — kirana, petrol pump, mall fashion, jewellery, mobile shop, supermarket cashier
 import { S, mk, type WorkedExample } from './_shared';
 
+const medicalShop = () => mk({
+  role: 'Retail chemist (medical-shop owner-pharmacist)',
+  context: 'A neighbourhood pharmacy; doctor prescriptions + OTC + monthly-credit chronic patients; Schedule-H drugs',
+  outputName: 'a prescription / medicine sale dispensed and billed',
+  officialVersion: 'Read prescription → check stock → dispense exact drug → record Schedule-H → bill → advise dosage → take payment.',
+  instanceAnchor: 'an evening walk-in with a hand-written prescription + a chronic regular on credit',
+  trigger: 'Customer hands over a prescription or asks for a medicine by name',
+  steps: [
+    S(1, { action: 'Decipher the doctor\'s handwriting — drug, strength, frequency', tool: 'Eye + experience', inputSource: 'A client / customer', timeMins: 2, frequency: 'many-times-a-day', needsJudgment: true, isPainful: true, notes: 'Mis-reading a scrawled strength is the scariest error; sometimes I phone the clinic to confirm.' }),
+    S(2, { action: 'Decide exact brand vs generic substitute by stock + price + what suits', tool: 'Mental formulary', frequency: 'many-times-a-day', needsJudgment: true }),
+    S(3, { action: 'Locate from racks / drawers, check batch + expiry', tool: 'Racks + boxes', timeMins: 2, frequency: 'many-times-a-day', frictionTags: ['lookup', 'movement'] }),
+    S(4, { action: 'Enter Schedule-H sale in the register (drug, qty, prescriber)', tool: 'Bound register', frequency: 'many-times-a-day', frictionTags: ['manual-transfer', 'approval'], notes: 'Statutory log, hand-written separate from the bill — pure double entry.' }),
+    S(5, { action: 'Bill on POS; add OTC items asked for', tool: 'Billing software', timeMins: 2, frequency: 'many-times-a-day' }),
+    S(6, { action: 'Mark a chronic regular\'s monthly credit in a side ledger', tool: 'Credit ledger', isShadow: true, frequency: 'daily', needsJudgment: true, notes: 'BP/diabetes regulars buy monthly and settle on pension day — a trust account the POS does not hold.' }),
+    S(7, { action: 'Advise dosage / timing / interactions in plain Tamil', tool: 'Voice', outputDestination: 'A client / customer', frequency: 'many-times-a-day', needsJudgment: true }),
+    S(8, { action: 'Note low / near-expiry stock to reorder from distributor', tool: 'Notebook + distributor app', inputSource: 'My own notes', timeMins: 15, frequency: 'daily', isShadow: true, frictionTags: ['lookup'] }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Pharma distributor', what: 'next-day stock replenishment', typicalDelay: 'daily van' },
+    { direction: 'wait-on', who: 'Prescribing clinic', what: 'clarification on an unclear prescription', typicalDelay: 'minutes by phone' },
+  ],
+  exceptions: [
+    { trigger: 'Prescribed brand out of stock', whatYouDo: 'Offer same-salt substitute with the patient\'s ok; note to reorder', howOften: 'daily' },
+    { trigger: 'Near-expiry stock unsold', whatYouDo: 'Return to distributor before cut-off date; track expiry rack weekly', howOften: 'monthly' },
+  ],
+});
+
+const hardwareStore = () => mk({
+  role: 'Hardware / building-materials shop owner',
+  context: 'Sells cement, pipes, paint, electricals, fittings; walk-ins + contractor credit (khata) accounts; auto delivery',
+  outputName: 'a contractor / customer materials order fulfilled and billed',
+  officialVersion: 'Take order → check stock → advise correct spec → bill or post to khata → arrange delivery → settle monthly for credit accounts.',
+  instanceAnchor: 'a mid-morning with a contractor calling in a site list while walk-ins wait',
+  trigger: 'Contractor phones a list / a customer walks in with a fitting to match',
+  steps: [
+    S(1, { action: 'Take the order — often a phoned list or a sample part to match', tool: 'Phone + counter', inputSource: 'A client / customer', timeMins: 4, frequency: 'many-times-a-day', frictionTags: ['lookup'], needsJudgment: true, notes: '"½-inch elbow, the good brand" — translating loose contractor-speak into exact SKUs.' }),
+    S(2, { action: 'Hunt stock across crowded racks + loft + godown', tool: 'Racks + godown', timeMins: 5, frequency: 'many-times-a-day', frictionTags: ['lookup', 'movement'] }),
+    S(3, { action: 'Advise grade / spec — which pipe class, cement grade, wire gauge', tool: 'Experience', frequency: 'many-times-a-day', needsJudgment: true }),
+    S(4, { action: 'Post to the contractor\'s khata or bill cash; quote price by relationship', tool: 'Khata ledger + bill book', isShadow: true, frequency: 'many-times-a-day', needsJudgment: true, notes: 'Regular contractors get a remembered rate + running credit — the price isn\'t on a tag.' }),
+    S(5, { action: 'Load + dispatch by auto / tempo to the site', tool: 'Auto + loader', outputDestination: 'A client / customer', timeMins: 15, frequency: 'daily', frictionTags: ['movement', 'chasing'] }),
+    S(6, { action: 'Reorder fast-movers from dealers as stock dips', tool: 'Phone + dealer', inputSource: 'My own notes', frequency: 'daily', frictionTags: ['lookup'] }),
+    S(7, { action: 'Month-end: reconcile each contractor khata, chase dues, settle returns', tool: 'Ledger + calculator', inputSource: 'My own notes', timeMins: 90, frequency: 'monthly', frictionTags: ['manual-transfer', 'chasing'], isPainful: true, notes: 'Untangling a month of credit, partial payments and site returns is the dreaded chore.' }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Cement / pipe dealers', what: 'stock replenishment + credit period', typicalDelay: '1–3 days' },
+    { direction: 'hand-to', who: 'Site supervisor', what: 'delivered materials + delivery note', typicalDelay: 'same day' },
+  ],
+  exceptions: [
+    { trigger: 'Wrong item delivered to site', whatYouDo: 'Send the right one with next auto, take back the wrong, adjust khata', howOften: 'weekly' },
+    { trigger: 'Contractor disputes month-end total', whatYouDo: 'Walk the khata page entry by entry; concede small gaps to keep the account', howOften: 'monthly' },
+  ],
+});
+
+const sareeShowroom = () => mk({
+  role: 'Saree showroom sales associate',
+  context: 'A large TN textile showroom (Pothys / RmKV-style); wedding-season shoppers; sectioned floors; separate billing + packing counters',
+  outputName: 'a customer\'s saree selection closed and billed',
+  officialVersion: 'Greet → understand occasion + budget → show options → finalise → token to billing → pay → collect at packing.',
+  instanceAnchor: 'a wedding family buying for multiple relatives on a Saturday',
+  trigger: 'A family sits at the counter and names the occasion',
+  steps: [
+    S(1, { action: 'Read the occasion, budget, who it\'s for, the unspoken status cues', tool: 'Conversation', inputSource: 'A client / customer', timeMins: 6, frequency: 'many-times-a-day', needsJudgment: true, notes: '"Something for the bride\'s mother" carries colour, price and prestige rules I judge on the fly.' }),
+    S(2, { action: 'Pull saree after saree, drape, spread on the counter to show', tool: 'Stock shelves + hands', timeMins: 25, frequency: 'many-times-a-day', frictionTags: ['movement'], isPainful: true, notes: 'Twenty pulled for two sold — the physical pulling + the no-buy risk is the draining part.' }),
+    S(3, { action: 'Suggest matching blouse, combinations, what pairs for the function', tool: 'Eye + experience', frequency: 'many-times-a-day', needsJudgment: true }),
+    S(4, { action: 'Park likely picks aside, track each family member\'s shortlist', tool: 'Counter + memory', isShadow: true, frequency: 'many-times-a-day', needsJudgment: true, notes: 'Whose pile is whose, what\'s "maybe" vs "yes" — held in head across a long sit.' }),
+    S(5, { action: 'Write selection slip, send customer + slip to billing counter', tool: 'Slip', outputDestination: 'Another team', frequency: 'many-times-a-day', frictionTags: ['manual-transfer', 'wait'] }),
+    S(6, { action: 'Customer pays at billing, collects at packing — separate queues', tool: 'Billing + packing counters', frequency: 'many-times-a-day', frictionTags: ['wait'] }),
+    S(7, { action: 'Refold + restock every pulled-but-unsold saree to its rack', tool: 'Hands', timeMins: 15, frequency: 'many-times-a-day', frictionTags: ['movement', 'rework'], isShadow: true, notes: 'Invisible reset work after each customer — counts for nothing on the sales sheet.' }),
+  ],
+  handoffs: [
+    { direction: 'hand-to', who: 'Billing counter', what: 'selection slip for invoicing', typicalDelay: 'queue-dependent' },
+    { direction: 'hand-to', who: 'Packing counter', what: 'paid items for packing + handover', typicalDelay: 'queue-dependent' },
+  ],
+  exceptions: [
+    { trigger: 'Customer leaves to "think" after a long showing', whatYouDo: 'Note the shortlist, restock, hope they return; no loss recorded but time gone', howOften: 'daily' },
+    { trigger: 'Desired design out of stock in the colour', whatYouDo: 'Check other branch / godown, offer to hold or order, take a number', howOften: 'weekly' },
+  ],
+});
+
 const kiranaStore = () => mk({
   role: 'Kirana store owner (neighbourhood grocery)',
   context: 'A single-family kirana in a Chennai residential lane; cash, UPI and credit (paavi/notebook); compete with Big Basket / Zepto',
@@ -174,6 +253,21 @@ const supermarketCashier = () => mk({
 });
 
 export const RETAIL: WorkedExample[] = [
+  { key: 'medical-shop', label: 'A retail chemist reading a prescription', domain: 'Retail', region: 'Tamil Nadu', emoji: '💊',
+    summary: 'Deciphering doctor scrawl, a statutory Schedule-H register kept by hand, and chronic patients on a pension-day credit ledger.',
+    behavioralContext: 'The capture marks prescription-reading as the painful, error-prone step and the chronic-patient credit as a shadow trust account. The hand-written Schedule-H register is a compliance duty re-keyed beside the bill — friction, but a legal one that can\'t simply be deleted.',
+    fieldSpecificFit: 'Leave the substitution judgment and the credit relationship with the pharmacist. The trace points the tool at two seams: a digital Schedule-H log that fills from the bill (ending the double entry) and an expiry/low-stock reorder alert. Prescription-reading stays human, with a phone-the-clinic fallback for the scary cases.',
+    build: medicalShop },
+  { key: 'hardware-store', label: 'A hardware shop fulfilling a contractor list', domain: 'Retail', region: 'Tamil Nadu', emoji: '🔩',
+    summary: 'Loose contractor-speak translated to exact SKUs, prices and credit held by relationship, month-end khata reconciliation the dreaded chore.',
+    behavioralContext: 'The capture tags khata pricing as a shadow judgment (rate + credit by relationship, not a tag) and month-end reconciliation as the painful step. The remembered contractor rates are the loyalty that keeps the account — a rigid catalogue price would lose it.',
+    fieldSpecificFit: 'The fit the trace supports is the back-office, not the counter banter: a running per-contractor ledger that logs each khata entry and produces a clean month-end statement, plus stock visibility for the godown hunt. The spec advice and relationship pricing stay the owner\'s.',
+    build: hardwareStore },
+  { key: 'saree-showroom', label: 'A saree showroom closing a wedding family', domain: 'Retail', region: 'Tamil Nadu', emoji: '🥻',
+    summary: 'Twenty sarees pulled for two sold, each family member\'s shortlist tracked in the head, then invisible refold-and-restock after every sit.',
+    behavioralContext: 'The capture marks the physical pull-and-show as the painful step, shortlist-tracking as a shadow judgment, and the refold/restock as invisible reset work that the sales sheet never credits. The occasion-reading is taste and status fluency no recommender replaces.',
+    fieldSpecificFit: 'Don\'t touch the consultative selling — that taste is the sale. The trace points the tool at the seams: a tablet shortlist that holds each member\'s picks and pushes straight to billing (collapsing the slip + double-queue), and stock-location lookup to cut the pulling. Restock effort finally becomes visible.',
+    build: sareeShowroom },
   { key: 'kirana-store', label: 'A day at the neighbourhood kirana', domain: 'Retail', region: 'Chennai, TN', emoji: '🏪',
     summary: 'A kirana owner between Vyapar, a credit notebook and a UPI QR — three sources of truth that have to add up every night.',
     behavioralContext: 'The trace tags the credit notebook (paavu) as both shadow work and a judgment step — who gets udhaar and for how long is the owner\'s social read, and it is the moat against Zepto. A rule-based "credit manager" would break the very trust that keeps the lane loyal.',

@@ -1,6 +1,33 @@
 // HEALTHCARE — PHC ANM, govt OP doc, ER nurse, pharmacist, lab tech, physio, dentist, counsellor
 import { S, mk, type WorkedExample } from './_shared';
 
+const ambulanceEmt = () => mk({
+  role: '108 ambulance EMT (emergency medical technician)',
+  context: 'A state 108 emergency ambulance; one EMT + driver; dispatched to road accidents, cardiac, obstetric calls; ePCR on a tablet',
+  outputName: 'a patient stabilised and handed over at hospital',
+  officialVersion: 'Receive dispatch → reach scene → assess + stabilise → load → care en route → handover at hospital → complete ePCR → ready for next.',
+  instanceAnchor: 'a highway two-wheeler accident call at night',
+  trigger: 'Dispatch from the 108 control room with location + complaint',
+  steps: [
+    S(1, { action: 'Take dispatch, confirm location, guide driver to a vague rural address', tool: 'Control room + phone + maps', inputSource: 'A system / report', timeMins: 2, frequency: 'many-times-a-day', frictionTags: ['lookup'], isShadow: true, notes: 'GPS pin lands "near the temple" — I call back to landmark-navigate; the real address-finding is off-system.' }),
+    S(2, { action: 'Reach scene through traffic, find the patient amid a crowd', tool: 'Ambulance', timeMins: 15, frequency: 'many-times-a-day', frictionTags: ['movement', 'wait'] }),
+    S(3, { action: 'Rapid assessment — airway, bleeding, consciousness; triage on the spot', tool: 'Hands + protocol', frequency: 'many-times-a-day', needsJudgment: true, isPainful: true, notes: 'Deciding what\'s life-threatening in seconds with a crowd pressing in — the highest-stakes call of the job.' }),
+    S(4, { action: 'Stabilise — control bleeding, splint, oxygen, IV per protocol', tool: 'Medical kit', frequency: 'many-times-a-day', needsJudgment: true }),
+    S(5, { action: 'Decide which hospital — nearest vs capable, call ahead to alert them', tool: 'Phone + knowledge', frequency: 'many-times-a-day', needsJudgment: true, notes: 'Nearest isn\'t always right — routing to a hospital that can actually treat this is a judgment that saves lives.' }),
+    S(6, { action: 'Load + give care en route, monitor vitals, reassure family', tool: 'Stretcher + monitor', frequency: 'many-times-a-day', frictionTags: ['movement'] }),
+    S(7, { action: 'Verbal + written handover to ER staff; transfer responsibility', tool: 'Voice + form', outputDestination: 'Another team', frequency: 'many-times-a-day', frictionTags: ['wait', 'approval'] }),
+    S(8, { action: 'Complete the ePCR on the tablet, restock kit, mark available', tool: 'ePCR tablet', timeMins: 15, frequency: 'many-times-a-day', frictionTags: ['manual-transfer'], notes: 'Typing the run-sheet after a draining call, often retrospectively — done from memory once the adrenaline drops.' }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: '108 control room', what: 'dispatch + nearest-unit allocation', typicalDelay: 'immediate' },
+    { direction: 'hand-to', who: 'Hospital ER', what: 'patient + clinical handover', typicalDelay: 'on arrival' },
+  ],
+  exceptions: [
+    { trigger: 'Receiving hospital refuses / has no bed', whatYouDo: 'Call control + other hospitals from the road, re-route, keep stabilising', howOften: 'weekly' },
+    { trigger: 'Crowd interference / hostility at an accident scene', whatYouDo: 'Focus on the patient, enlist a calm bystander, request police via control', howOften: 'weekly' },
+  ],
+});
+
 const anmAntenatalVisit = () => mk({
   role: 'ANM (Auxiliary Nurse Midwife) at a rural PHC',
   context: 'A sub-centre in rural Tamil Nadu covering three hamlets; one ANM, one ASHA per hamlet',
@@ -234,6 +261,11 @@ const counsellor = () => mk({
 });
 
 export const HEALTHCARE: WorkedExample[] = [
+  { key: 'ambulance-emt', label: 'A 108 ambulance EMT on a night accident call', domain: 'Healthcare', region: 'Tamil Nadu', emoji: '🚨',
+    summary: 'Landmark-navigating to a vague GPS pin, triaging in seconds with a crowd pressing in, then routing to the hospital that can actually treat — ePCR typed from memory after.',
+    behavioralContext: 'The capture tags address-finding as a shadow step (the GPS pin is approximate; real navigation is call-backs and landmarks), marks on-scene triage as the painful, highest-stakes judgment, and notes the run-sheet is filled retrospectively once adrenaline drops. The hospital-routing call is life-or-death judgment, not a nearest-distance lookup.',
+    fieldSpecificFit: 'Nothing near the clinical judgment — triage and hospital-routing are exactly what to protect. The trace points the tool at the seams: better last-leg navigation (landmark + call-back built in) and a live hospital bed/capability board so routing and pre-alerts aren\'t a phone-around, plus voice-assisted ePCR so the run-sheet isn\'t reconstructed from memory.',
+    build: ambulanceEmt },
   { key: 'anm-antenatal-visit', label: 'PHC antenatal home visit + HMIS', domain: 'Healthcare', region: 'Rural TN', emoji: '🩺',
     summary: 'A village ANM doing the weekly antenatal round with the ASHA — paper register, personal diary of high-risk mothers, and the same readings typed into e-HMS a third time.',
     behavioralContext: 'The trace makes the triple-entry stark: a personal high-risk diary she actually trusts, the PHC register as the official record, and e-HMS for reporting up — the same numbers keyed three times, two steps tagged painful. Her sense of a mother\'s BP trend and the ASHA\'s who-is-home knowledge are judgment/shadow steps no portal holds.',

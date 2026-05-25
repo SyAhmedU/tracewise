@@ -1,6 +1,162 @@
 // PROFESSIONAL SERVICES — motor insurance claim, Coimbatore CA GSTR-3B, L2 IT incident
 import { S, mk, type WorkedExample } from './_shared';
 
+const bankLoanOfficer = () => mk({
+  role: 'Bank loan officer (MSME / home loan)',
+  context: 'A branch credit desk processing MSME + home loan files; core banking + a separate loan-origination portal',
+  outputName: 'a loan application moved to sanction (or rejection)',
+  officialVersion: 'Receive application → verify KYC + documents → appraise + score → field visit → recommend → credit committee sanction → disburse.',
+  instanceAnchor: 'an MSME working-capital file for a small Coimbatore unit',
+  trigger: 'Applicant submits a loan request with documents',
+  steps: [
+    S(1, { action: 'Collect + check KYC, financials, GST returns, bank statements', tool: 'Branch + scanner', inputSource: 'A client / customer', timeMins: 40, frequency: 'daily', frictionTags: ['lookup'] }),
+    S(2, { action: 'Key the same data into core banking AND the LOS portal', tool: 'Core banking + LOS', timeMins: 30, frequency: 'daily', frictionTags: ['manual-transfer', 'rework'], notes: 'Two systems that don\'t talk — I type the customer twice.' }),
+    S(3, { action: 'Read the real business — judge cash-flow, intent, local reputation', tool: 'Experience + market sense', frequency: 'daily', needsJudgment: true, notes: 'The numbers say one thing; knowing the trade + the person says another — that read is the actual credit call.' }),
+    S(4, { action: 'Field visit — see the unit, stock, verify it exists + operates', tool: 'Site visit', timeMins: 90, frequency: 'few-times-a-week', frictionTags: ['movement'], needsJudgment: true }),
+    S(5, { action: 'Write appraisal note + recommendation, attach to file', tool: 'Word / template', outputDestination: 'Another team', timeMins: 45, frequency: 'daily', frictionTags: ['manual-transfer'] }),
+    S(6, { action: 'Chase missing documents + internal approvals up the chain', tool: 'Phone + email', frequency: 'daily', frictionTags: ['chasing', 'approval', 'wait'], isPainful: true, notes: 'The file sits in someone\'s inbox; I keep ringing to keep it moving — the slowest, most thankless part.' }),
+    S(7, { action: 'On sanction, prep disbursement + compliance docs; on reject, explain to customer', tool: 'Core banking', frequency: 'daily', needsJudgment: true }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Credit committee / regional office', what: 'sanction approval above branch limit', typicalDelay: 'days to weeks' },
+    { direction: 'wait-on', who: 'Legal / valuation vendor', what: 'title + property valuation report', typicalDelay: 'a week' },
+  ],
+  exceptions: [
+    { trigger: 'Document mismatch surfaces late', whatYouDo: 'Send file back for re-submission; the clock restarts; customer frets', howOften: 'weekly' },
+    { trigger: 'Good borrower, weak paperwork', whatYouDo: 'Guide them to fix docs informally so a sound case isn\'t lost to format', howOften: 'weekly' },
+  ],
+});
+
+const caBookkeeping = () => mk({
+  role: 'Accountant at a CA firm (SME bookkeeping + compliance)',
+  context: 'A CA firm doing monthly books, TDS, and filings for a roster of SME clients; Tally + portals',
+  outputName: 'a client\'s month closed and statutory filings done',
+  officialVersion: 'Collect vouchers → enter in Tally → reconcile bank → compute TDS / GST → file → share reports → archive.',
+  instanceAnchor: 'a month-end close for a trading client with messy bills',
+  trigger: 'Month ends; client sends (or is chased for) the month\'s bills',
+  steps: [
+    S(1, { action: 'Chase the client for bills, bank statements, missing vouchers', tool: 'WhatsApp + email + phone', inputSource: 'A client / customer', timeMins: 60, frequency: 'monthly', frictionTags: ['chasing', 'wait'], isPainful: true, notes: 'Half the month is spent extracting documents from clients — the dreaded, repeating tussle.' }),
+    S(2, { action: 'Sort a pile of mixed bills — what\'s expense, asset, personal, GST-eligible', tool: 'Eye + judgment', frequency: 'monthly', needsJudgment: true }),
+    S(3, { action: 'Enter vouchers into Tally, tag ledgers', tool: 'Tally', timeMins: 120, frequency: 'monthly', frictionTags: ['manual-transfer'] }),
+    S(4, { action: 'Reconcile bank statement against entries, hunt mismatches', tool: 'Tally + statement', timeMins: 60, frequency: 'monthly', frictionTags: ['lookup', 'rework'] }),
+    S(5, { action: 'Compute TDS / GST, decide treatment of grey items', tool: 'Tally + knowledge', frequency: 'monthly', needsJudgment: true, notes: 'Whether an expense is allowable / which head — the judgment that protects the client in scrutiny.' }),
+    S(6, { action: 'File returns on the GST / TDS portals before due date', tool: 'Govt portals', outputDestination: 'A system / report', timeMins: 40, frequency: 'monthly', frictionTags: ['wait', 'approval'] }),
+    S(7, { action: 'Share P&L + filing proofs with client; archive working papers', tool: 'PDF + email + drive', outputDestination: 'A client / customer', timeMins: 30, frequency: 'monthly', frictionTags: ['manual-transfer'] }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Client', what: 'bills + bank statements + clarifications', typicalDelay: 'days, with chasing' },
+    { direction: 'wait-on', who: 'Reviewing CA (partner)', what: 'sign-off before filing', typicalDelay: 'a day' },
+  ],
+  exceptions: [
+    { trigger: 'Bills arrive after the due date', whatYouDo: 'File on best estimate, revise later, or pay late fee — flag to client', howOften: 'monthly' },
+    { trigger: 'Portal down near deadline', whatYouDo: 'Retry through the night, keep screenshots as proof of attempt', howOften: 'filing-deadline months' },
+  ],
+});
+
+const advocateFiling = () => mk({
+  role: 'Advocate\'s clerk (district / high court litigation)',
+  context: 'A litigation lawyer\'s office; drafting, filing and listing cases; court e-filing + physical filing sections',
+  outputName: 'a case filed and listed for hearing',
+  officialVersion: 'Take brief → draft → client approves → pay court fee → file in registry → cure defects → get listing → note next date.',
+  instanceAnchor: 'filing a civil suit with a deadline before limitation expires',
+  trigger: 'Client gives a brief / a matter must be filed before limitation',
+  steps: [
+    S(1, { action: 'Understand the matter, gather documents, settle the cause of action', tool: 'Brief + client', inputSource: 'A client / customer', timeMins: 90, frequency: 'few-times-a-week', needsJudgment: true }),
+    S(2, { action: 'Draft pleadings, adapt from past templates + precedents', tool: 'Word + precedent bank', timeMins: 120, frequency: 'few-times-a-week', needsJudgment: true, frictionTags: ['lookup'] }),
+    S(3, { action: 'Get client to read, approve, sign + attest documents', tool: 'Print + signature', frequency: 'few-times-a-week', frictionTags: ['wait', 'approval'] }),
+    S(4, { action: 'Compute + pay court fee, prepare filing set with annexures', tool: 'Court-fee + photocopy', timeMins: 40, frequency: 'few-times-a-week', frictionTags: ['movement'] }),
+    S(5, { action: 'File at registry / e-filing portal; take diary number', tool: 'Registry + e-filing', outputDestination: 'A system / report', timeMins: 60, frequency: 'few-times-a-week', frictionTags: ['wait', 'approval'] }),
+    S(6, { action: 'Cure registry "defects" — margin, index, court-fee objections', tool: 'Registry counter', frequency: 'few-times-a-week', frictionTags: ['rework', 'movement', 'chasing'], isPainful: true, notes: 'Registry returns the bundle over format trivia; repeated counter trips to clear objections is the maddening part.' }),
+    S(7, { action: 'Track listing, note the next hearing date, diarise + tell client', tool: 'Cause-list + diary', isShadow: true, frequency: 'daily', needsJudgment: true, notes: 'Watching the cause list + keeping every matter\'s next date is a personal diary system, not a firm system.' }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Court registry', what: 'acceptance / defect clearance + listing', typicalDelay: 'days' },
+    { direction: 'wait-on', who: 'Client', what: 'signed documents + fee', typicalDelay: 'a day or two' },
+  ],
+  exceptions: [
+    { trigger: 'Filing rejected on a defect near limitation', whatYouDo: 'Cure + re-file same day, file a delay-condonation petition if needed', howOften: 'monthly' },
+    { trigger: 'Matter listed at short notice', whatYouDo: 'Rearrange the day, brief the counsel, rush documents to court', howOften: 'weekly' },
+  ],
+});
+
+const recruitmentConsultant = () => mk({
+  role: 'Recruitment consultant (IT / staffing agency)',
+  context: 'A staffing firm filling client roles on commission; ATS + LinkedIn + Naukri + WhatsApp',
+  outputName: 'a candidate placed and joined at a client',
+  officialVersion: 'Take requirement → source → screen → shortlist → schedule interviews → manage offer → ensure joining → invoice.',
+  instanceAnchor: 'a client demanding 3 shortlists in 48 hours for a niche role',
+  trigger: 'Client sends a job requirement to fill',
+  steps: [
+    S(1, { action: 'Decode the real requirement behind the JD — must-have vs nice-to-have, budget, culture', tool: 'Call + JD', inputSource: 'A client / customer', timeMins: 30, frequency: 'daily', needsJudgment: true, notes: 'The JD and what the manager will actually accept are different — reading that is the edge.' }),
+    S(2, { action: 'Source candidates across Naukri / LinkedIn / own database', tool: 'Job portals + ATS', timeMins: 90, frequency: 'daily', frictionTags: ['lookup'] }),
+    S(3, { action: 'Screen calls — skills, notice period, expectation, genuineness', tool: 'Phone', frequency: 'daily', needsJudgment: true }),
+    S(4, { action: 'Format CVs to client template, write a fit summary per candidate', tool: 'Word', outputDestination: 'A client / customer', timeMins: 40, frequency: 'daily', frictionTags: ['manual-transfer', 'rework'] }),
+    S(5, { action: 'Coordinate interview slots between candidate + client calendars', tool: 'Email + phone + WhatsApp', frequency: 'daily', frictionTags: ['chasing', 'wait'] }),
+    S(6, { action: 'Manage the offer — counter-offers, negotiation, keep candidate warm', tool: 'Phone', frequency: 'daily', needsJudgment: true, isPainful: true, notes: 'Candidates ghost or take counter-offers after I\'ve invested weeks — the offer-to-join gap is where deals (and commission) die.' }),
+    S(7, { action: 'Follow up to actual joining, then raise the client invoice', tool: 'ATS + invoice', outputDestination: 'A client / customer', frequency: 'few-times-a-week', frictionTags: ['chasing'] }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Client hiring manager', what: 'shortlist feedback + interview slots', typicalDelay: 'days, often slow' },
+    { direction: 'wait-on', who: 'Candidate', what: 'commitment through to joining', typicalDelay: 'weeks (notice period)' },
+  ],
+  exceptions: [
+    { trigger: 'Candidate accepts then drops out', whatYouDo: 'Keep 2 backups warm per role; restart sourcing fast', howOften: 'weekly' },
+    { trigger: 'Client freezes the role mid-process', whatYouDo: 'Park candidates, redeploy to other open roles, absorb the sunk effort', howOften: 'monthly' },
+  ],
+});
+
+const payrollProcessing = () => mk({
+  role: 'Payroll executive (SME / outsourced payroll)',
+  context: 'Runs monthly payroll for several SME clients; attendance + statutory (PF/ESI/PT/TDS); Excel + portals',
+  outputName: 'a client\'s monthly payroll run and salaries credited',
+  officialVersion: 'Collect attendance + changes → compute gross → deduct statutory → generate payslips → bank transfer → file PF/ESI/TDS.',
+  instanceAnchor: 'a month-end run for a 120-employee client with last-minute changes',
+  trigger: 'Month-end; client sends attendance + new joiners / exits / changes',
+  steps: [
+    S(1, { action: 'Chase + collect attendance, leave, new joiners, exits, increments', tool: 'Email + WhatsApp + Excel', inputSource: 'A client / customer', timeMins: 60, frequency: 'monthly', frictionTags: ['chasing', 'wait'] }),
+    S(2, { action: 'Reconcile attendance data — fix gaps, decode "adjust his LOP" notes', tool: 'Excel', frequency: 'monthly', needsJudgment: true, frictionTags: ['rework'], notes: 'Informal verbal adjustments from the client become judgment calls I encode.' }),
+    S(3, { action: 'Compute gross, allowances, overtime, arrears per employee', tool: 'Excel formulas', timeMins: 90, frequency: 'monthly', frictionTags: ['manual-transfer'] }),
+    S(4, { action: 'Apply PF / ESI / PT / TDS rules, handle slab + ceiling edge cases', tool: 'Excel + rules', frequency: 'monthly', needsJudgment: true, isPainful: true, notes: 'Statutory edge cases (ESI ceiling crossings, TDS projections) are where a silent error becomes a compliance notice — the high-stakes worry.' }),
+    S(5, { action: 'Generate payslips, get client sign-off on the register', tool: 'Excel / payroll tool', outputDestination: 'A client / customer', frequency: 'monthly', frictionTags: ['approval', 'wait'] }),
+    S(6, { action: 'Prepare bank transfer file in the bank\'s exact format', tool: 'Bank template', frequency: 'monthly', frictionTags: ['manual-transfer', 'rework'] }),
+    S(7, { action: 'File PF / ESI / TDS returns on portals + share challans', tool: 'Govt portals', outputDestination: 'A system / report', timeMins: 50, frequency: 'monthly', frictionTags: ['wait'] }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Client HR', what: 'attendance + changes + register approval', typicalDelay: 'days, near deadline' },
+    { direction: 'wait-on', who: 'Bank portal', what: 'salary transfer processing', typicalDelay: 'same / next day' },
+  ],
+  exceptions: [
+    { trigger: 'Client sends a change after the register is approved', whatYouDo: 'Re-run affected employees, re-issue payslips, re-make bank file', howOften: 'most months' },
+    { trigger: 'Statutory rate / slab changes mid-year', whatYouDo: 'Update the master, recompute, watch for retro-effect months', howOften: 'a few times a year' },
+  ],
+});
+
+const bpoAgent = () => mk({
+  role: 'Customer-support agent (voice / chat BPO)',
+  context: 'An inbound support process for a telecom / bank / e-commerce client; CRM + knowledge base + call queue; AHT + CSAT targets',
+  outputName: 'a customer query resolved on a contact',
+  officialVersion: 'Take contact → verify identity → diagnose → resolve via systems → log disposition → close within AHT, hit CSAT.',
+  instanceAnchor: 'a back-to-back queue afternoon with an irate billing complaint',
+  trigger: 'A call / chat lands from the auto-distributor',
+  steps: [
+    S(1, { action: 'Greet, verify identity per script + security questions', tool: 'CRM + script', inputSource: 'A client / customer', timeMins: 1, frequency: 'many-times-a-day', frictionTags: ['approval'] }),
+    S(2, { action: 'Diagnose the actual problem under the stated one', tool: 'Listening + CRM history', frequency: 'many-times-a-day', needsJudgment: true, notes: 'The first sentence is rarely the real issue — drawing it out is the skill the scorecard ignores.' }),
+    S(3, { action: 'Search knowledge base + flip between 3–4 internal systems', tool: 'KB + multiple tools', timeMins: 3, frequency: 'many-times-a-day', frictionTags: ['lookup', 'manual-transfer'], isPainful: true, notes: 'Toggling tabs while the customer waits and AHT ticks — the swivel-chair scramble is the daily grind.' }),
+    S(4, { action: 'Calm an angry customer while still moving toward a fix', tool: 'Soft skills', frequency: 'many-times-a-day', needsJudgment: true }),
+    S(5, { action: 'Apply the fix / raise a ticket / process the request in the system', tool: 'CRM + client systems', frequency: 'many-times-a-day' }),
+    S(6, { action: 'Log disposition + notes, pick the right wrap-up code', tool: 'CRM', frequency: 'many-times-a-day', frictionTags: ['manual-transfer'], notes: 'Choosing a disposition code that is never quite right for a messy real call.' }),
+    S(7, { action: 'Watch AHT, hit after-call work limit, brace for the CSAT survey', tool: 'Agent dashboard', frequency: 'many-times-a-day', frictionTags: ['wait'], needsJudgment: true }),
+  ],
+  handoffs: [
+    { direction: 'hand-to', who: 'L2 / specialist team', what: 'escalated tickets beyond agent scope', typicalDelay: 'hours to days' },
+    { direction: 'wait-on', who: 'Back-end / client system', what: 'request processing confirmation', typicalDelay: 'minutes to days' },
+  ],
+  exceptions: [
+    { trigger: 'Issue needs a system the agent can\'t access', whatYouDo: 'Raise an internal ticket, set expectation, follow up — customer dislikes the wait', howOften: 'daily' },
+    { trigger: 'System outage spikes the queue', whatYouDo: 'Use a holding script, manage tempers, accept AHT blowing out', howOften: 'weekly' },
+  ],
+});
+
 const insuranceClaim = () => mk({
   role: 'Motor claims handler',
   context: 'Back office of a general insurer; small team handling motor claims',
@@ -93,6 +249,36 @@ const itSupportIncident = () => mk({
 });
 
 export const SERVICES: WorkedExample[] = [
+  { key: 'bank-loan-officer', label: 'A bank officer moving an MSME loan to sanction', domain: 'Professional services', region: 'Coimbatore, TN', emoji: '🏦',
+    summary: 'The same customer keyed into core banking and the LOS twice, a credit call that is really a read of the trade and the person, and endless chasing of the file up the chain.',
+    behavioralContext: 'The capture marks the double data-entry as rework, the credit read as the core judgment (numbers vs knowing the trade and borrower), and the up-the-chain chasing as the painful step. The relationship-and-reputation read is exactly what a pure credit score misses.',
+    fieldSpecificFit: 'The trace points the fix at the plumbing and the wait, not the judgment: integrate core-banking and LOS to kill the re-keying, and a file-status tracker so chasing approvals becomes visible instead of phone-around. The field read and credit decision stay the officer\'s.',
+    build: bankLoanOfficer },
+  { key: 'ca-bookkeeping', label: 'A CA-firm accountant closing an SME month', domain: 'Professional services', region: 'Tamil Nadu', emoji: '🧾',
+    summary: 'Half the month spent extracting bills from clients, then ledger judgment on grey items, then a race to file before the portal deadline.',
+    behavioralContext: 'The capture pins the painful step at chasing clients for documents and tags the allowable-expense / head-classification as the protected judgment that shields the client in scrutiny. The extraction tussle is a relationship problem, not just a data one.',
+    fieldSpecificFit: 'The fit the trace supports is the intake bottleneck: a client document-collection app (photograph the bill, auto-reminders, a running checklist) feeding Tally, so the month doesn\'t start with a chase. The grey-item treatment and partner sign-off stay human judgment.',
+    build: caBookkeeping },
+  { key: 'advocate-filing', label: 'An advocate\'s clerk filing a case before limitation', domain: 'Professional services', region: 'Tamil Nadu', emoji: '⚖️',
+    summary: 'Drafting from a precedent bank, then repeated counter-trips to cure registry "defects" over format trivia, with every matter\'s next date kept in a personal diary.',
+    behavioralContext: 'The capture marks defect-curing as the painful, repetitive step and tags cause-list watching + date-keeping as a shadow personal system (not the firm\'s). The drafting and cause-of-action judgment are legal craft to protect.',
+    fieldSpecificFit: 'The trace aims the tool at the defect loop and the diary: a pre-filing checklist that catches the registry\'s common format objections before the trip, and a shared matter-tracker that pulls next-hearing dates off the cause list. Drafting stays the advocate\'s judgment.',
+    build: advocateFiling },
+  { key: 'recruitment-consultant', label: 'A recruiter placing a candidate on commission', domain: 'Professional services', region: 'Chennai, TN', emoji: '🧑‍💼',
+    summary: 'Reading what a manager will actually accept vs the JD, reformatting CVs per client, and an offer-to-join gap where deals (and commission) quietly die.',
+    behavioralContext: 'The capture tags the requirement-read as judgment (JD vs real acceptance) and marks offer management as the painful step — candidates ghost or take counter-offers after weeks of work. The human read and candidate-warming are where the value sits.',
+    fieldSpecificFit: 'Keep the screening and offer-stage relationship human. The trace points the tool at the churn: CV-to-template formatting, interview-slot coordination, and an offer-stage pipeline that flags at-risk candidates early. Sourcing assist helps; the "will this manager hire this person" call stays the recruiter\'s.',
+    build: recruitmentConsultant },
+  { key: 'payroll-processing', label: 'A payroll executive running an SME month-end', domain: 'Professional services', region: 'India urban', emoji: '💸',
+    summary: 'Verbal "adjust his LOP" notes encoded as judgment, statutory edge cases where a silent error becomes a notice, and a re-run every time a change lands after sign-off.',
+    behavioralContext: 'The capture marks the statutory edge-case handling (ESI ceiling, TDS projection) as the painful, high-stakes judgment and tags informal client adjustments as judgment calls being encoded. Mechanical automation that ignores the edge cases is exactly how compliance notices happen.',
+    fieldSpecificFit: 'The trace supports automating the deterministic core — gross/statutory computation, payslip and bank-file generation in the right formats — while surfacing edge cases for human review. The "what did the client mean" adjustments stay a judgment step, not a silent rule.',
+    build: payrollProcessing },
+  { key: 'bpo-support-agent', label: 'A support agent through a back-to-back queue', domain: 'Professional services', region: 'Chennai, TN', emoji: '🎧',
+    summary: 'Diagnosing the real issue under the stated one while toggling four systems against a ticking AHT, then forcing a messy call into a wrap-up code.',
+    behavioralContext: 'The capture pins the painful step at the swivel-chair scramble across multiple tools while the customer waits, and tags the real-problem diagnosis + de-escalation as judgment the scorecard ignores. Squeezing AHT without fixing the tool-sprawl just punishes the agent.',
+    fieldSpecificFit: 'The fit the trace points to is a unified agent desktop that surfaces customer context + KB answer in one place (killing the toggle), plus AI-assisted disposition coding. The listening, judgment and de-escalation — the part the scorecard underrates — stay firmly human.',
+    build: bpoAgent },
   { key: 'insurance-claim', label: 'Settling a motor insurance claim', domain: 'Professional services', region: 'Global', emoji: '📄',
     summary: 'A motor claims handler end to end — three re-keyings of the same numbers, a shadow tracker the whole team relies on, and an assessor they keep chasing.',
     behavioralContext: 'The trace exposes the same numbers re-keyed three times (email → CMS → payments) and a personal Excel the whole team secretly depends on because the CMS dashboard is unreliable — articulation work plugging a system gap — plus a private "which garages over-quote" list that is real underwriting judgment.',

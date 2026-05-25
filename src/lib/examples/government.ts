@@ -1,6 +1,58 @@
 // GOVERNMENT — VAO, traffic constable, RTO clerk, sub-registrar clerk, sanitary inspector, BLO, PDS dealer
 import { S, mk, type WorkedExample } from './_shared';
 
+const anganwadiWorker = () => mk({
+  role: 'Anganwadi worker (ICDS centre)',
+  context: 'A village anganwadi under ICDS; preschool + nutrition + growth monitoring + antenatal support; multiple registers + the Poshan Tracker app',
+  outputName: 'a day of centre services delivered + records updated',
+  officialVersion: 'Open centre → cook + serve nutrition → preschool activities → weigh / monitor children → home visits → update registers + Poshan app.',
+  instanceAnchor: 'a weekday with a growth-monitoring day plus an app sync due',
+  trigger: 'Centre opens; children + mothers arrive',
+  steps: [
+    S(1, { action: 'Open centre, check + cook the hot-meal / take-home ration', tool: 'Kitchen + stock', timeMins: 60, frequency: 'daily', frictionTags: ['movement'] }),
+    S(2, { action: 'Run preschool — songs, activities, attendance', tool: 'Play materials', frequency: 'daily', needsJudgment: true }),
+    S(3, { action: 'Weigh + measure children, plot on growth chart, spot malnutrition', tool: 'Scale + chart', frequency: 'weekly', needsJudgment: true, notes: 'Catching a faltering child early is the real point — a judgment from seeing the same kids weekly.' }),
+    S(4, { action: 'Enter the same data in paper registers AND the Poshan Tracker app', tool: 'Registers + smartphone app', timeMins: 60, frequency: 'daily', frictionTags: ['manual-transfer', 'rework'], isPainful: true, notes: 'Eleven registers plus an app that wants the same numbers — the duplicate data-entry is the dreaded daily load that steals time from the children.' }),
+    S(5, { action: 'Home visits — antenatal mothers, absent children, severe-malnutrition follow-up', tool: 'Foot + register', timeMins: 90, frequency: 'few-times-a-week', frictionTags: ['movement'], needsJudgment: true }),
+    S(6, { action: 'Fight a patchy network to sync the Poshan app', tool: 'Smartphone + signal', frequency: 'daily', frictionTags: ['wait', 'chasing'], isShadow: true, notes: 'Walking to a spot with signal to get the app to upload — invisible work no one counts.' }),
+    S(7, { action: 'Report stock + numbers up to the supervisor / CDPO', tool: 'Phone + WhatsApp', outputDestination: 'My manager', frequency: 'weekly', frictionTags: ['manual-transfer'] }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Supply / ration depot', what: 'nutrition stock replenishment', typicalDelay: 'monthly, sometimes late' },
+    { direction: 'hand-to', who: 'PHC / ANM', what: 'referrals for sick / malnourished children', typicalDelay: 'days' },
+  ],
+  exceptions: [
+    { trigger: 'Poshan app won\'t sync for days', whatYouDo: 'Keep paper as truth, sync in bulk when network returns, risk a mismatch', howOften: 'weekly' },
+    { trigger: 'Severe-malnutrition case spotted', whatYouDo: 'Fast-track referral to PHC / NRC, follow up the family personally', howOften: 'monthly' },
+  ],
+});
+
+const policeFirWriter = () => mk({
+  role: 'Police station writer / duty officer (FIR registration)',
+  context: 'A station house writer registering complaints + FIRs; CCTNS software + station registers; walk-in complainants',
+  outputName: 'a complaint received and an FIR registered (or referred)',
+  officialVersion: 'Receive complaint → judge cognizable or not → record statement → register FIR in CCTNS → give free copy → assign for investigation.',
+  instanceAnchor: 'an evening walk-in complainant, agitated, with a property dispute',
+  trigger: 'A complainant walks in (or a phone / online complaint arrives)',
+  steps: [
+    S(1, { action: 'Hear the complainant out, calm them, draw out what actually happened', tool: 'Listening', inputSource: 'A client / customer', timeMins: 20, frequency: 'many-times-a-day', needsJudgment: true, notes: 'The account comes out tangled + emotional — separating fact from grievance is the core skill.' }),
+    S(2, { action: 'Judge cognizable vs non-cognizable, which sections apply', tool: 'Law + experience', frequency: 'many-times-a-day', needsJudgment: true, isPainful: true, notes: 'This call decides whether an FIR must be registered — getting it wrong cuts both ways (refusal complaints vs frivolous FIRs); the heaviest judgment.' }),
+    S(3, { action: 'Record the statement in the complainant\'s words', tool: 'Pen + statement sheet', timeMins: 20, frequency: 'many-times-a-day', frictionTags: ['manual-transfer'] }),
+    S(4, { action: 'Enter the FIR in CCTNS — sections, parties, narrative', tool: 'CCTNS software', outputDestination: 'A system / report', timeMins: 25, frequency: 'daily', frictionTags: ['manual-transfer', 'rework'], notes: 'Re-typing the hand-written statement into a clunky form — the same content, twice.' }),
+    S(5, { action: 'Generate FIR number, give the free copy to complainant', tool: 'CCTNS + printer', outputDestination: 'A client / customer', frequency: 'daily', frictionTags: ['approval'] }),
+    S(6, { action: 'Get the SHO\'s nod, assign to an investigating officer', tool: 'Voice + register', outputDestination: 'My manager', frequency: 'daily', frictionTags: ['approval', 'wait'] }),
+    S(7, { action: 'Maintain the station general diary + multiple statutory registers', tool: 'Bound registers', isShadow: true, frequency: 'daily', needsJudgment: true, notes: 'Parallel paper registers kept alongside CCTNS "just in case" — the system isn\'t trusted as sole record.' }),
+  ],
+  handoffs: [
+    { direction: 'hand-to', who: 'Investigating officer', what: 'registered FIR for investigation', typicalDelay: 'same day' },
+    { direction: 'wait-on', who: 'SHO / senior', what: 'direction on sensitive / disputed complaints', typicalDelay: 'minutes to hours' },
+  ],
+  exceptions: [
+    { trigger: 'Complaint is non-cognizable but complainant insists', whatYouDo: 'Record as CSR / community-service register, explain, refer to court', howOften: 'daily' },
+    { trigger: 'CCTNS down', whatYouDo: 'Register on paper, enter into CCTNS later, keep timestamps defensible', howOften: 'weekly' },
+  ],
+});
+
 const vaoCommunityCertificate = () => mk({
   role: 'Village Administrative Officer (TN Revenue Dept)',
   context: 'A taluk in rural Tamil Nadu; VAO covers three revenue villages; uses TN e-Sevai / CAN portal',
@@ -196,6 +248,16 @@ const pdsDealer = () => mk({
 });
 
 export const GOVERNMENT: WorkedExample[] = [
+  { key: 'anganwadi-worker', label: 'An anganwadi worker through an ICDS day', domain: 'Government', region: 'Rural TN', emoji: '🧒',
+    summary: 'Eleven paper registers plus a Poshan app wanting the same numbers, growth-monitoring judgment from seeing the same kids weekly, and walking to find signal to sync.',
+    behavioralContext: 'The capture pins the painful step at duplicate data-entry (registers AND app) that steals time from children, tags the network-hunt to sync as invisible shadow work, and marks early-malnutrition spotting as the protected judgment. The duplication is a system-design failure, not worker slowness.',
+    fieldSpecificFit: 'Protect the child-monitoring judgment entirely. The trace aims the fix at the duplication and connectivity: a single offline-first app that replaces the register stack and syncs opportunistically (no signal-hunt), with growth charts auto-plotted for the worker to read. The home-visit judgment stays human.',
+    build: anganwadiWorker },
+  { key: 'police-fir-writer', label: 'A station writer registering an FIR', domain: 'Government', region: 'Tamil Nadu', emoji: '🚓',
+    summary: 'Separating fact from grievance in a tangled account, the heavy cognizable-or-not call, then re-typing the hand-written statement into CCTNS — with paper registers kept "just in case".',
+    behavioralContext: 'The capture marks the cognizability decision as the painful, two-edged judgment, tags the parallel paper registers as a shadow trust-gap (CCTNS not trusted as sole record), and flags the statement-to-CCTNS re-keying as rework. The fact-finding and legal judgment are exactly what must stay human.',
+    fieldSpecificFit: 'Leave the cognizability call and statement-taking with the officer. The trace points the tool at the re-keying and the trust gap: dictation/transcription that turns the spoken statement into the CCTNS draft once, and making CCTNS reliable enough to retire the shadow paper registers. The legal judgment is protected, not automated.',
+    build: policeFirWriter },
   { key: 'vao-community-certificate', label: 'Issuing a community certificate (e-Sevai)', domain: 'Government', region: 'Rural TN', emoji: '🏛',
     summary: 'A VAO from portal queue to village doorstep — paper village registers, evening visits, defensible judgment when records conflict.',
     behavioralContext: 'The trace tags the cross-check against the paper village register as shadow + judgment work — local knowledge no portal holds — and the conflicting-records call as painful because it must stay defensible against later political pressure. The personal status notebook exists because the e-Sevai queue view cannot answer the applicant at the door.',

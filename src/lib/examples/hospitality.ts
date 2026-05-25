@@ -1,6 +1,58 @@
 // HOSPITALITY — café, restaurant, hotel, salon, wedding hall, theatre, real-estate site visit
 import { S, mk, type WorkedExample } from './_shared';
 
+const homestayHost = () => mk({
+  role: 'Hill-station homestay host-owner',
+  context: 'A 4-room homestay (Kodaikanal-style); bookings via OTAs + WhatsApp + repeat guests; host also cooks + guides',
+  outputName: 'a guest stay delivered start to finish',
+  officialVersion: 'Confirm booking → prep room → receive guest → serve meals + local tips → checkout → settle + review.',
+  instanceAnchor: 'a weekend family arriving Friday evening, booked half on an OTA, half direct',
+  trigger: 'Booking confirmed across OTA / WhatsApp for a date',
+  steps: [
+    S(1, { action: 'Merge bookings from MakeMyTrip / Booking.com / WhatsApp into one mental calendar', tool: 'OTA apps + WhatsApp + diary', inputSource: 'A system / report', timeMins: 10, frequency: 'daily', frictionTags: ['lookup', 'manual-transfer'], isShadow: true, isPainful: true, notes: 'Three calendars, no sync — double-booking dread lives here; I keep a paper diary as the real truth.' }),
+    S(2, { action: 'Prep room — clean, hot water, check fireplace / blankets for the cold', tool: 'Housekeeping', timeMins: 40, frequency: 'daily', frictionTags: ['movement'] }),
+    S(3, { action: 'Receive guest, read their vibe — quiet couple vs loud family — set the tone', tool: 'Hospitality sense', inputSource: 'A client / customer', frequency: 'daily', needsJudgment: true }),
+    S(4, { action: 'Plan + cook meals to taste, dietary needs, what\'s in the garden today', tool: 'Kitchen', timeMins: 60, frequency: 'many-times-a-day', needsJudgment: true }),
+    S(5, { action: 'Give local guidance — which view-point, weather window, avoid the tourist trap', tool: 'Local knowledge', outputDestination: 'A client / customer', frequency: 'daily', needsJudgment: true, notes: 'This personal steering is exactly why they pick a homestay over a hotel.' }),
+    S(6, { action: 'Checkout — settle balance (OTA paid vs direct), collect cash / UPI', tool: 'UPI + OTA dashboard', timeMins: 10, frequency: 'daily', frictionTags: ['wait'] }),
+    S(7, { action: 'Request a review, save the guest\'s number for direct rebooking', tool: 'WhatsApp + phone', isShadow: true, frequency: 'daily', needsJudgment: true, notes: 'Nudging repeat guests off the OTA (to skip commission) is a quiet, relationship-based effort.' }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'OTA platforms', what: 'booking + payout (minus commission)', typicalDelay: 'days after checkout' },
+    { direction: 'wait-on', who: 'Local help / cook', what: 'turn-up on busy weekends', typicalDelay: 'same day' },
+  ],
+  exceptions: [
+    { trigger: 'OTA + WhatsApp double-book the same room', whatYouDo: 'Shuffle rooms, upgrade someone, or place at a neighbour\'s homestay', howOften: 'peak weekends' },
+    { trigger: 'Guest arrives in heavy fog / late', whatYouDo: 'Hold dinner warm, guide them in by phone landmark-by-landmark', howOften: 'monsoon season' },
+  ],
+});
+
+const tourOperator = () => mk({
+  role: 'Travel-desk operator (custom South-India tour packages)',
+  context: 'A small agency assembling custom tours — temples, hill stations, transport, hotels; phone + WhatsApp enquiries',
+  outputName: 'a confirmed, paid custom tour itinerary',
+  officialVersion: 'Take enquiry → design itinerary → quote → confirm bookings → collect payment → hand over vouchers → support during travel.',
+  instanceAnchor: 'a North-Indian family wanting a 6-day TN temple + Kodai circuit',
+  trigger: 'An enquiry comes in by phone / WhatsApp / a portal lead',
+  steps: [
+    S(1, { action: 'Draw out the real ask — pace, budget, must-sees, elders / kids, food', tool: 'Phone + WhatsApp', inputSource: 'A client / customer', timeMins: 20, frequency: 'daily', needsJudgment: true, notes: 'What they say vs what they\'ll enjoy differ — reading that gap is the craft.' }),
+    S(2, { action: 'Design a day-by-day itinerary balancing distance, darshan timings, rest', tool: 'Maps + experience', timeMins: 45, frequency: 'daily', needsJudgment: true, isShadow: true, notes: 'Drive-time vs temple-timing vs heat is juggled in the head from years of doing it.' }),
+    S(3, { action: 'Phone hotels + drivers for rates + availability, build the cost', tool: 'Phone + supplier contacts', timeMins: 60, frequency: 'daily', frictionTags: ['wait', 'chasing', 'lookup'] }),
+    S(4, { action: 'Compose the quote, mark up, send a neat itinerary + price', tool: 'Word / WhatsApp', outputDestination: 'A client / customer', timeMins: 30, frequency: 'daily', frictionTags: ['manual-transfer'] }),
+    S(5, { action: 'Negotiate, revise itinerary a few times, re-confirm supplier holds', tool: 'Phone + WhatsApp', frequency: 'daily', frictionTags: ['rework', 'chasing'], isPainful: true, notes: 'Endless revisions on a maybe-booking — re-pinging hotels to re-hold rooms is the draining churn.' }),
+    S(6, { action: 'Take advance, confirm all bookings, issue vouchers + driver details', tool: 'UPI + vouchers', timeMins: 30, frequency: 'few-times-a-week', frictionTags: ['manual-transfer'] }),
+    S(7, { action: 'Stay on call through the trip for changes, complaints, emergencies', tool: 'Phone', outputDestination: 'A client / customer', frequency: 'daily', needsJudgment: true }),
+  ],
+  handoffs: [
+    { direction: 'wait-on', who: 'Hotels + drivers', what: 'rate + availability confirmation', typicalDelay: 'hours to a day' },
+    { direction: 'hand-to', who: 'Assigned driver', what: 'itinerary + guest details', typicalDelay: 'before trip start' },
+  ],
+  exceptions: [
+    { trigger: 'Guest changes plan mid-trip', whatYouDo: 'Re-book hotel / re-route driver on the fly, adjust cost, smooth it over', howOften: 'most trips' },
+    { trigger: 'Hotel cancels a held room last minute', whatYouDo: 'Scramble an equivalent, eat the rate difference to protect the relationship', howOften: 'monthly' },
+  ],
+});
+
 const cafeBarista = () => mk({
   role: 'Café barista (morning shift)',
   context: 'A small specialty café, single bar, two-person morning shift',
@@ -204,6 +256,16 @@ const realEstateAgent = () => mk({
 });
 
 export const HOSPITALITY: WorkedExample[] = [
+  { key: 'homestay-host', label: 'A hill-station homestay host through a guest stay', domain: 'Hospitality', region: 'Kodaikanal, TN', emoji: '🏡',
+    summary: 'Three booking calendars with no sync (a paper diary is the real truth), personal local steering, and a quiet push to win direct rebookings.',
+    behavioralContext: 'The capture pins the painful, dread-laden step at merging un-synced OTA + WhatsApp calendars — the double-booking risk — and tags the direct-rebooking nudge as a shadow relationship effort. The personal cooking and local guidance are the whole reason guests choose a homestay; automating them away kills the product.',
+    fieldSpecificFit: 'The trace aims squarely at the calendar seam: a channel manager that syncs OTAs + WhatsApp into one source of truth, retiring the paper diary and the double-booking dread. The hospitality, cooking and local steering stay entirely human — that\'s the value to protect.',
+    build: homestayHost },
+  { key: 'tour-operator', label: 'A travel desk assembling a custom South-India tour', domain: 'Hospitality', region: 'Tamil Nadu', emoji: '🗺',
+    summary: 'Itineraries balanced in the head against drive-time and darshan timings, then endless quote revisions and re-pinging hotels to re-hold rooms.',
+    behavioralContext: 'The capture tags itinerary design as a shadow judgment (distance vs temple-timing vs heat, from experience) and marks the revision churn — re-confirming supplier holds on a maybe-booking — as the painful step. The reading of what a guest will actually enjoy is craft a template can\'t replace.',
+    fieldSpecificFit: 'Keep the itinerary craft and trip-support human. The fit the trace supports is the churn: a quote/itinerary builder with saved supplier rates and one-tap revisions, plus a live availability board so re-holding rooms stops being a phone-around. The design judgment stays the operator\'s.',
+    build: tourOperator },
   { key: 'cafe-barista', label: 'Café barista at the morning rush', domain: 'Hospitality', region: 'Global', emoji: '☕',
     summary: 'A barista pulling shots through the 8 AM queue — merging mobile orders into the in-store line in their head.',
     behavioralContext: 'The bar is a flow state — interrupting it with a screen-prompt is more expensive than mis-prioritising an order. Baristas trust their muscle memory and queue-sense over any in-store system.',
