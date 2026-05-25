@@ -10,6 +10,10 @@ import { MANUFACTURING } from './manufacturing';
 import { AGRI } from './agri';
 import { LOGISTICS } from './logistics';
 import { SERVICES } from './services';
+import { IT } from './it';
+import { ITES } from './ites';
+import { SAAS } from './saas';
+import { ACADEMIA } from './academia';
 import type { WorkedExample } from './_shared';
 
 export type { WorkedExample } from './_shared';
@@ -24,4 +28,8 @@ export const WORKED_EXAMPLES: WorkedExample[] = [
   ...MANUFACTURING,
   ...AGRI,
   ...LOGISTICS,
+  ...IT,
+  ...ITES,
+  ...SAAS,
+  ...ACADEMIA,
 ];
