@@ -3,7 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style id="sx-infuse">
+      :root{--font-display:'Fraunces',Georgia,'Times New Roman',serif;--font-mono:'IBM Plex Mono',ui-monospace,monospace;}
+      html h1,html h2,html h3{font-family:var(--font-display);font-weight:600;letter-spacing:-.02em;}
+      html,body{overflow-x:clip;}
+      *{-webkit-tap-highlight-color:transparent;}
+      .syed-bar{padding-top:env(safe-area-inset-top,0px);}
+      @media (hover:none){button:hover{transform:none;}}
+    </style>
     <meta name="description" content="Tracewise — document what your work actually is, step by step, so AI can be aimed where it genuinely helps." />
     <title>Tracewise — Map the work you actually do</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
