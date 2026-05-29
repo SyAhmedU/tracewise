@@ -72,8 +72,9 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column' }}>
+      <a className="skip-link" href="#main-content">Skip to content</a>
       <SyedBar projectName="Tracewise — map the work you actually do" />
-      <main style={{ flex: 1, width: '100%', maxWidth: 760, margin: '0 auto', padding: '28px 20px 80px' }}>
+      <main id="main-content" tabIndex={-1} style={{ flex: 1, width: '100%', maxWidth: 760, margin: '0 auto', padding: '28px 20px 80px' }}>
         {mode === 'home' && (
           <Landing
             workflows={workflows}
